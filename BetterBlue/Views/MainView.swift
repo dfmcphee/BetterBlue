@@ -330,6 +330,27 @@ struct MainView: View {
 
     @ViewBuilder
     private var mainContent: some View {
+        if showsVehicles {
+            // N Control layout: Car / Map / Trips / Settings tabs.
+            NRootView(
+                vehicles: displayedVehicles,
+                selectedIndex: $selectedVehicleIndex,
+                mfaState: mfaState,
+                sheetPresentation: sheetPresentation
+            )
+            .mfaFlow(state: mfaState)
+            .sheet(item: Bindable(sheetPresentation).active) { sheet in
+                vehicleSheetContent(for: sheet)
+            }
+        } else {
+            classicContent
+        }
+    }
+
+    /// Empty / loading / error states (and the previous map + sheet
+    /// layout, which `showsVehicles` now routes to `NRootView` instead).
+    @ViewBuilder
+    private var classicContent: some View {
         ZStack {
             navigationContent
             // Where the navigation bar would put its trailing item — see
@@ -518,6 +539,8 @@ struct MainView: View {
             ClimateSettingsSheet(vehicle: vehicle)
         case .chargeLimitSettings(let vehicle):
             ChargeLimitSettingsSheet(vehicle: vehicle)
+        case .vehicleMap(let vehicle):
+            VehicleMapSheet(vehicle: vehicle, onDone: { sheetPresentation.dismiss() })
         }
     }
 
@@ -549,8 +572,14 @@ struct MainView: View {
                     )
                 } else {
                     // Same condition as `showsVehicles`, which layers
-                    // the vehicle sheet over this map.
-                    vehicleMap
+                    // the vehicle sheet over this hero stage.
+                    if let vehicle = currentVehicle {
+                        VehicleHeroView(
+                            vehicle: vehicle,
+                            bottomInset: mapBottomInset,
+                            sheetPresentation: sheetPresentation
+                        )
+                    }
                 }
         }
     }
