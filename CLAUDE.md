@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BetterBlue is a native iOS/watchOS app for controlling Hyundai and Kia vehicles via BlueLink/Kia Connect services. Built with SwiftUI, SwiftData, and powered by the [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit) Swift package.
+N Control (a fork of BetterBlue; the Xcode project, targets and Swift types keep the BetterBlue names) is a native iOS/watchOS app for controlling Hyundai and Kia vehicles via BlueLink/Kia Connect services. Built with SwiftUI, SwiftData, and powered by the [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit) Swift package.
 
 ### BetterBlueKit Submodule
 
@@ -66,7 +66,7 @@ All models are in `BetterBlue/Models/`:
 - **Simulator**: Uses `/tmp/BetterBlue_Shared` to work around App Group isolation
 - **Device**: Uses iCloud sync with App Group fallback
 - All targets must use this function to ensure data sharing
-- The App Group and iCloud container identifiers come from `AppIdentifiers` (`BetterBlue/Utility/AppIdentifiers.swift`), which reads them from Info.plist keys injected from `Config/Shared.xcconfig` (defaults: `group.com.betterblue.shared`, `iCloud.com.markschmidt.BetterBlue`; per-machine overrides in gitignored `Config/Local.xcconfig`). Never hardcode these strings in source — use `AppIdentifiers`.
+- The App Group and iCloud container identifiers come from `AppIdentifiers` (`BetterBlue/Utility/AppIdentifiers.swift`), which reads them from Info.plist keys injected from `Config/Shared.xcconfig` (defaults: `group.com.dfmcphee.ncontrol`, `iCloud.com.dfmcphee.NControl`; per-machine overrides in gitignored `Config/Local.xcconfig`). Never hardcode these strings in source — use `AppIdentifiers`.
 
 ### API Client Architecture
 

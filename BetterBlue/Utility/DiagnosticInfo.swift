@@ -482,7 +482,7 @@ struct DiagnosticInfoView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     ShareLink(
                         item: diagnosticInfo.formattedOutput,
-                        subject: Text("BetterBlue Sync Diagnostics")
+                        subject: Text("N Control Sync Diagnostics")
                     ) {
                         Image(systemName: "square.and.arrow.up")
                     }

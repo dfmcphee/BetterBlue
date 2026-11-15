@@ -143,7 +143,7 @@ struct VehicleStatusComplication: Widget {
         StaticConfiguration(kind: kind, provider: WatchComplicationProvider()) { entry in
             VehicleStatusComplicationView(entry: entry)
         }
-        .configurationDisplayName("BetterBlue")
+        .configurationDisplayName("N Control")
         .description("View vehicle battery and range")
         .supportedFamilies([
             .accessoryCircular,
@@ -237,7 +237,7 @@ struct VehicleStatusComplicationView: View {
                     } else if let name = entry.vehicleName {
                         Text(name)
                     } else {
-                        Text("BetterBlue")
+                        Text("N Control")
                     }
                 }
         case .accessoryRectangular:

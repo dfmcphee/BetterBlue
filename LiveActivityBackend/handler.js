@@ -8,7 +8,7 @@ const TABLE_NAME = process.env.TABLE_NAME || 'betterblue-wakeup-schedules-v4';
 const APNS_KEY_ID = process.env.APNS_KEY_ID;
 const APNS_TEAM_ID = process.env.APNS_TEAM_ID;
 const APNS_KEY = process.env.APNS_KEY;
-const APNS_BUNDLE_ID = process.env.APNS_BUNDLE_ID || 'com.markschmidt.BetterBlue';
+const APNS_BUNDLE_ID = process.env.APNS_BUNDLE_ID || 'com.dfmcphee.NControl';
 const APNS_ENVIRONMENT = process.env.APNS_ENVIRONMENT || 'development';
 
 let apnProvider = null;

@@ -14,12 +14,12 @@ import Foundation
 enum AppIdentifiers {
     nonisolated static let appGroup = infoPlistValue(
         for: "BBAppGroupIdentifier",
-        fallback: "group.com.betterblue.shared"
+        fallback: "group.com.dfmcphee.ncontrol"
     )
 
     nonisolated static let iCloudContainer = infoPlistValue(
         for: "BBICloudContainerIdentifier",
-        fallback: "iCloud.com.markschmidt.BetterBlue"
+        fallback: "iCloud.com.dfmcphee.NControl"
     )
 
     private nonisolated static func infoPlistValue(for key: String, fallback: String) -> String {

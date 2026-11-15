@@ -329,7 +329,7 @@ struct ContainerFailureView: View {
             Text("Couldn't Load Your Data")
                 .font(.title2)
                 .fontWeight(.semibold)
-            Text("BetterBlue couldn't open its local data store. This usually clears up after signing back into iCloud or restarting the device.")
+            Text("N Control couldn't open its local data store. This usually clears up after signing back into iCloud or restarting the device.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
