@@ -1,8 +1,8 @@
 //
 //  NRootView.swift
-//  N Control
+//  N Link
 //
-//  Top-level N Control layout: Car / Map / Trips / Settings, with the
+//  Top-level N Link layout: Car / Map / Trips / Settings, with the
 //  telemetry-style bottom bar and a shared error banner.
 //
 
@@ -14,6 +14,15 @@ import SwiftUI
 enum NTab: String, CaseIterable, Identifiable {
     case car = "Car", map = "Map", trips = "Trips", settings = "Settings"
     var id: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .car: "car.fill"
+        case .map: "map.fill"
+        case .trips: "chart.bar.fill"
+        case .settings: "gearshape.fill"
+        }
+    }
 }
 
 /// Keeps one command runner per vehicle so busy states survive tab
@@ -48,7 +57,27 @@ struct NRootView: View {
     var body: some View {
         if let vehicle {
             let runner = store.runner(for: vehicle)
-            content(vehicle: vehicle, runner: runner)
+            GeometryReader { geo in
+                let mode = NLayoutMode.resolve(for: CGSize(
+                    width: geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing,
+                    height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom
+                ))
+                Group {
+                    if mode == .cockpit {
+                        NCockpitView(
+                            vehicle: vehicle,
+                            vehicles: vehicles,
+                            selectedIndex: $selectedIndex,
+                            tab: $tab
+                        )
+                    } else if mode == .glance {
+                        glanceTabs(vehicle: vehicle)
+                    } else {
+                        content(vehicle: vehicle)
+                    }
+                }
+                .animation(.snappy, value: mode)
+            }
                 .overlay(alignment: .top) { banner(runner: runner) }
                 .environment(runner)
                 .environment(sheetPresentation)
@@ -57,8 +86,33 @@ struct NRootView: View {
         }
     }
 
+    /// iPhone Duo outer display: the system tab bar, which iOS hosts in
+    /// the vertical bar beside the content.
+    private func glanceTabs(vehicle: BBVehicle) -> some View {
+        TabView(selection: $tab) {
+            Tab(NTab.car.rawValue, systemImage: NTab.car.systemImage, value: NTab.car) {
+                NavigationStack {
+                    NGlanceHomeView(
+                        vehicle: vehicle,
+                        vehicles: vehicles,
+                        selectedIndex: $selectedIndex
+                    )
+                }
+            }
+            Tab(NTab.map.rawValue, systemImage: NTab.map.systemImage, value: NTab.map) {
+                NMapView(vehicle: vehicle)
+            }
+            Tab(NTab.trips.rawValue, systemImage: NTab.trips.systemImage, value: NTab.trips) {
+                NavigationStack { NTripsView(vehicle: vehicle) }
+            }
+            Tab(NTab.settings.rawValue, systemImage: NTab.settings.systemImage, value: NTab.settings) {
+                SettingsView(isTab: true)
+            }
+        }
+    }
+
     @ViewBuilder
-    private func content(vehicle: BBVehicle, runner: VehicleCommandRunner) -> some View {
+    private func content(vehicle: BBVehicle) -> some View {
         switch tab {
         case .car:
             NavigationStack {

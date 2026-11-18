@@ -222,7 +222,7 @@ struct AddAccountView: View {
                             ErrorBox(headline: "\(selectedBrand.displayName) \(selectedRegion.displayName) is in BETA", detail: regionDetail, backgroundColor: .blue, icon: "hammer.circle")
                         } else if !supportedRegions(for: selectedBrand).contains(selectedRegion) {
                             let regionDetail = try? AttributedString(
-                                markdown: "If you'd like to help bring N Control to your region, " +
+                                markdown: "If you'd like to help bring N Link to your region, " +
                                           "please consider [contributing to the open source project]" +
                                           "(https://github.com/schmidtwmark/BetterBlueKit)."
                             )
@@ -349,12 +349,12 @@ struct AddAccountView: View {
                     .foregroundColor(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("N Control requires an active Hyundai BlueLink, Kia Connect, or Genesis Connect subscription.")
-                    Text("N Control stores your credentials securely on your device and in iCloud.")
+                    Text("N Link requires an active Hyundai BlueLink, Kia Connect, or Genesis Connect subscription.")
+                    Text("N Link stores your credentials securely on your device and in iCloud.")
 
                     let link = "[GitHub](https://github.com/dfmcphee/BetterBlue)"
                     if let openSourceString = try? AttributedString(
-                        markdown: "N Control is fully open source. To view the source code, visit \(link).") {
+                        markdown: "N Link is fully open source. To view the source code, visit \(link).") {
                         Text(openSourceString)
                     }
                 }

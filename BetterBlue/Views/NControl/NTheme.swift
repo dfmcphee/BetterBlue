@@ -1,8 +1,8 @@
 //
 //  NTheme.swift
-//  N Control
+//  N Link
 //
-//  Design tokens and shared building blocks for the N Control
+//  Design tokens and shared building blocks for the N Link
 //  "telemetry" design: near-black ground, graphite cards, condensed
 //  numerals and a single Luminous Orange accent.
 //
@@ -186,10 +186,13 @@ struct NScreenHeader: View {
     let title: String
     var subtitle: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.nEmbeddedPane) private var isEmbeddedPane
 
     var body: some View {
         HStack(spacing: 12) {
-            NIconButton(systemImage: "chevron.left", accessibilityLabel: "Back") { dismiss() }
+            if !isEmbeddedPane {
+                NIconButton(systemImage: "chevron.left", accessibilityLabel: "Back") { dismiss() }
+            }
             VStack(alignment: .leading, spacing: 0) {
                 Text(title)
                     .font(NTheme.display(26))

@@ -1,6 +1,6 @@
 //
 //  NClimateView.swift
-//  N Control
+//  N Link
 //
 //  Pre-conditioning: target temperature dial, seats, steering wheel,
 //  defrost, run time and presets. Only exposes what the Hyundai/Kia

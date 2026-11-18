@@ -82,14 +82,14 @@ struct ClimateSettingsInfoSheet: View {
                         text: "Seat heating and cooling controls are available " +
                             "for newer vehicles (generation 3+). " +
                             "If the MyHyundai / Kia Connect app supports enabling seat " +
-                            "heat / cooling, N Control should be able to set it as well."
+                            "heat / cooling, N Link should be able to set it as well."
                     )
 
                     SettingDescription(
                         title: "Show Climate Duration",
                         text: "Newer vehicles (generation 3+) support setting a duration " +
                             "for climate control. If the MyHyundai / Kia Connect app " +
-                            "supports setting a climate duration, N Control should be " +
+                            "supports setting a climate duration, N Link should be " +
                             "able to set it as well."
                     )
                 }

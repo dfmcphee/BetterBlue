@@ -30,7 +30,7 @@ struct SettingsView: View {
     ) private var displayedVehicles: [BBVehicle]
     @Environment(\.dismiss) private var dismiss
     @State private var appSettings = AppSettings.shared
-    /// True when shown as the N Control Settings tab rather than a sheet:
+    /// True when shown as the N Link Settings tab rather than a sheet:
     /// hides the Done button, which would have nothing to dismiss.
     var isTab = false
 
@@ -41,7 +41,7 @@ struct SettingsView: View {
     @State private var showingExportSheet = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 // Vehicles section for display management
                 let allVehicles = displayedVehicles
@@ -479,7 +479,7 @@ private struct LiveActivitiesInfoSheet: View {
                         Text("What it does")
                             .font(.headline)
                         Text(
-                            "When enabled, N Control will display a Live Activity on your " +
+                            "When enabled, N Link will display a Live Activity on your " +
                             "Lock Screen and Dynamic Island while your vehicle is charging. " +
                             "The Live Activity shows real-time charging progress without " +
                             "needing to open the app."
@@ -492,7 +492,7 @@ private struct LiveActivitiesInfoSheet: View {
                         Text("How it works")
                             .font(.headline)
                         Text(
-                            "To keep the Live Activity updated, N Control registers your " +
+                            "To keep the Live Activity updated, N Link registers your " +
                             "device with a lightweight backend service that periodically " +
                             "sends silent push notifications to wake the app and refresh " +
                             "the charging status."

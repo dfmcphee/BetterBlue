@@ -331,7 +331,7 @@ struct MainView: View {
     @ViewBuilder
     private var mainContent: some View {
         if showsVehicles {
-            // N Control layout: Car / Map / Trips / Settings tabs.
+            // N Link layout: Car / Map / Trips / Settings tabs.
             NRootView(
                 vehicles: displayedVehicles,
                 selectedIndex: $selectedVehicleIndex,

@@ -1,6 +1,6 @@
 //
 //  NTripsView.swift
-//  N Control
+//  N Link
 //
 //  Week / month totals, distance per day, and recent trips — all
 //  computed in the app from the EV trip summary list the server returns.

@@ -1,4 +1,4 @@
-// Shared build configuration for all N Control targets.
+// Shared build configuration for all N Link targets.
 //
 // To build with your own signing identity, don't edit this file — copy
 // Config/Local.xcconfig.template to Config/Local.xcconfig (gitignored) and

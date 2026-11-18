@@ -16,24 +16,28 @@ struct VehicleWidgetEntryView: View {
     var body: some View {
         if let vehicle = entry.vehicle {
             // The background (and its matching text color) are resolved
-            // here. "Default" uses dynamic colors so it swaps with the
-            // system appearance at the render layer — no colorScheme env.
-            let style = WidgetBackground.style(
-                forName: entry.configuration.effectiveBackgroundName(for: vehicle)
-            )
+            // here. "Default" is the N Link dark surface in both system
+            // appearances; other backgrounds are the user's own choice.
+            let backgroundName = entry.configuration.effectiveBackgroundName(for: vehicle)
+            let style = WidgetBackground.style(forName: backgroundName)
+            let isDefault = backgroundName == "default"
             VehicleControlsWidget(
                 vehicle: vehicle,
                 buttons: entry.configuration.slotButtons,
-                textColor: style.textColor,
+                textColor: isDefault ? .white : style.textColor,
                 showEVPercent: entry.configuration.showEVPercentage,
                 showGasPercent: entry.configuration.showGasPercentage
             )
             .containerBackground(for: .widget) {
-                LinearGradient(
-                    gradient: Gradient(colors: style.gradient),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                if isDefault {
+                    NLinkDarkBackground()
+                } else {
+                    LinearGradient(
+                        gradient: Gradient(colors: style.gradient),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
             }
         } else {
             VStack {
@@ -63,14 +67,23 @@ struct VehicleControlsWidget: View {
 
     var body: some View {
         Link(destination: URL(string: "betterblue://vehicle/\(vehicle.vin)")!) {
-            UnifiedVehicleWidget(
-                vehicle: vehicle,
-                buttons: buttons,
-                textColor: textColor,
-                showEVPercent: showEVPercent,
-                showGasPercent: showGasPercent,
-                isSmall: family == .systemSmall
-            )
+            if family == .systemSmall {
+                NLinkSmallWidget(
+                    vehicle: vehicle,
+                    buttons: buttons,
+                    textColor: textColor,
+                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent
+                )
+            } else {
+                UnifiedVehicleWidget(
+                    vehicle: vehicle,
+                    buttons: buttons,
+                    textColor: textColor,
+                    showEVPercent: showEVPercent,
+                    showGasPercent: showGasPercent,
+                    isSmall: false
+                )
+            }
         }
     }
 }

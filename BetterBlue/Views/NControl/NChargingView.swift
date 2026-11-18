@@ -1,6 +1,6 @@
 //
 //  NChargingView.swift
-//  N Control
+//  N Link
 //
 //  Battery, start/stop charge, and separate AC / DC charge limits.
 //

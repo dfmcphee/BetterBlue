@@ -1,6 +1,6 @@
 //
 //  NHomeView.swift
-//  N Control
+//  N Link
 //
 //  The Car tab: state-of-charge gauge, quick telemetry, and the three
 //  top jobs — climate, charging, lock.
@@ -60,7 +60,7 @@ struct NHomeView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
-                NCapsLabel("N Control", color: NTheme.accent)
+                NCapsLabel("N Link", color: NTheme.accent)
                 vehicleTitle
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     Text(runner.isBusy(.refresh)

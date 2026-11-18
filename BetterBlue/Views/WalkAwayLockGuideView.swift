@@ -66,12 +66,12 @@ struct WalkAwayLockGuideView: View {
                     numberedStep(2, "Add a **Wait** action set to **120 seconds** — time to close the doors and walk away.")
                     numberedStep(
                         3,
-                        "Add N Control's **Refresh Vehicle Status** action and set its Vehicle to your car. "
+                        "Add N Link's **Refresh Vehicle Status** action and set its Vehicle to your car. "
                             + "This wakes the car for an up-to-date reading."
                     )
                     numberedStep(
                         4,
-                        "Add N Control's **Is Vehicle Locked** action. For its Vehicle, tap the field and "
+                        "Add N Link's **Is Vehicle Locked** action. For its Vehicle, tap the field and "
                             + "choose the **Updated Vehicle** variable from the refresh step."
                     )
                     numberedStep(

@@ -134,7 +134,7 @@ struct OptionalFeaturesInfoSheet: View {
                 VStack(alignment: .leading, spacing: 24) {
                     SettingDescription(
                         title: "About these settings",
-                        text: "N Control works out what your vehicle supports from what "
+                        text: "N Link works out what your vehicle supports from what "
                             + "the service reports about it. That guess is occasionally "
                             + "wrong either way, so each switch starts from the guess and "
                             + "stays wherever you put it."
@@ -156,7 +156,7 @@ struct OptionalFeaturesInfoSheet: View {
                             title: "Seat Heat Controls",
                             text: "Seat heating and cooling controls are available for newer "
                                 + "vehicles (generation 3+). If the MyHyundai / Kia Connect "
-                                + "app supports enabling seat heat / cooling, N Control "
+                                + "app supports enabling seat heat / cooling, N Link "
                                 + "should be able to set it as well."
                         )
 
@@ -164,7 +164,7 @@ struct OptionalFeaturesInfoSheet: View {
                             title: "Show Climate Duration",
                             text: "Newer vehicles (generation 3+) support setting a duration "
                                 + "for climate control. If the MyHyundai / Kia Connect app "
-                                + "supports setting a climate duration, N Control should be "
+                                + "supports setting a climate duration, N Link should be "
                                 + "able to set it as well."
                         )
                     }

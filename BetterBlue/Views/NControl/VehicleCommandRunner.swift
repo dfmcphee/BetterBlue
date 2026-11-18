@@ -1,8 +1,8 @@
 //
 //  VehicleCommandRunner.swift
-//  N Control
+//  N Link
 //
-//  Runs vehicle commands for the N Control screens: sends the command,
+//  Runs vehicle commands for the N Link screens: sends the command,
 //  waits for the car to confirm, and keeps per-action busy/status state
 //  plus a single error banner. Ported from PersistentVehicleSheet so the
 //  new screens behave the same way the old sheet did.

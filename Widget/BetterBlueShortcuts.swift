@@ -11,7 +11,7 @@
 //    1. An intent to perform
 //    2. One or more `phrases` — the EXACT Siri trigger phrases.
 //       `\(.applicationName)` is required somewhere in each phrase
-//       (we accept either "N Control", or any
+//       (we accept either "N Link", or any
 //       localized app name the user has set).
 //    3. A short title + system image, used in the in-app Shortcuts
 //       gallery and in Spotlight.

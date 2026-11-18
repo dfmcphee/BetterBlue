@@ -39,9 +39,9 @@ func getAppGroupStoreURL() throws -> URL {
             code: 1001,
             userInfo: [
                 NSLocalizedDescriptionKey:
-                    "Vehicle data not accessible. Please open the N Control app first to sync your vehicles.",
+                    "Vehicle data not accessible. Please open the N Link app first to sync your vehicles.",
                 NSLocalizedRecoverySuggestionErrorKey:
-                    "Open the N Control app and try again."
+                    "Open the N Link app and try again."
             ],
         )
     }

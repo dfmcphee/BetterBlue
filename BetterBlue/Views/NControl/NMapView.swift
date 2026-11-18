@@ -1,6 +1,6 @@
 //
 //  NMapView.swift
-//  N Control
+//  N Link
 //
 //  Where the car is: dark map, accent marker, address, and Navigate.
 //

@@ -1,6 +1,6 @@
 //
 //  NSecurityView.swift
-//  N Control
+//  N Link
 //
 //  Lock state, openings, tires and 12V, drawn around a top-down car.
 //

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-N Control (a fork of BetterBlue; the Xcode project, targets and Swift types keep the BetterBlue names) is a native iOS/watchOS app for controlling Hyundai and Kia vehicles via BlueLink/Kia Connect services. Built with SwiftUI, SwiftData, and powered by the [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit) Swift package.
+N Link (a fork of BetterBlue; the Xcode project, targets and Swift types keep the BetterBlue names) is a native iOS/watchOS app for controlling Hyundai and Kia vehicles via BlueLink/Kia Connect services. Built with SwiftUI, SwiftData, and powered by the [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit) Swift package.
 
 ### BetterBlueKit Submodule
 
