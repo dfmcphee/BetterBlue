@@ -222,6 +222,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         AppLogger.push.error("Failed to register for remote notifications: \(error)")
+        LiveActivityDiagnostics.record("Couldn't get a push token: \(error.localizedDescription)")
     }
 
     // Handle background push notifications for Live Activity wakeup

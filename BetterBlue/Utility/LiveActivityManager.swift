@@ -15,11 +15,21 @@ import SwiftData
 import UIKit
 import WidgetKit
 
-#if DEBUG
-private let liveActivityBackendURL = "https://phgu023o97.execute-api.us-east-1.amazonaws.com/dev"
-#else
-private let liveActivityBackendURL = "https://6rx06wxs8f.execute-api.us-east-1.amazonaws.com/prod"
-#endif
+/// The wake-up Worker (LiveActivityWorker/), from BB_LIVE_ACTIVITY_HOST.
+/// Nil when no host is configured: no push token leaves the device.
+private let liveActivityBackendURL: String? = AppIdentifiers.liveActivityHost.map { "https://\($0)" }
+
+/// The last thing the Live Activity code decided, with a time, shown under
+/// the Live Activities setting so a silent failure can be diagnosed on
+/// device without Xcode.
+enum LiveActivityDiagnostics {
+    static let key = "liveActivityLastEvent"
+
+    static func record(_ message: String) {
+        let time = Date().formatted(date: .omitted, time: .shortened)
+        UserDefaults.standard.set("\(time) · \(message)", forKey: key)
+    }
+}
 
 @MainActor
 final class LiveActivityManager {
@@ -235,7 +245,10 @@ final class LiveActivityManager {
     func updateActivity(for vehicle: BBVehicle, status: VehicleStatus, modelContext: ModelContext) {
         #if canImport(ActivityKit)
         guard AppSettings.shared.liveActivitiesEnabled else { return }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            LiveActivityDiagnostics.record("iOS reports Live Activities are disabled for N Link")
+            return
+        }
 
         var type: LiveActivityType = .none
 
@@ -249,6 +262,7 @@ final class LiveActivityManager {
         if type != .none {
             startOrUpdateActivity(for: vehicle, status: status, type: type)
         } else {
+            LiveActivityDiagnostics.record("Car reported not charging, so no Live Activity")
             endActivity(for: vehicle)
         }
         #endif
@@ -330,8 +344,14 @@ final class LiveActivityManager {
     ) {
         #if canImport(ActivityKit)
         guard AppSettings.shared.liveActivitiesEnabled else { return }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        guard let status = createStatusFromVehicle(vehicle) else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            LiveActivityDiagnostics.record("iOS reports Live Activities are disabled for N Link")
+            return
+        }
+        guard let status = createStatusFromVehicle(vehicle) else {
+            LiveActivityDiagnostics.record("No saved status to start a Live Activity from")
+            return
+        }
 
         startOrUpdateActivity(
             for: vehicle,
@@ -437,6 +457,7 @@ final class LiveActivityManager {
             Task { @MainActor in
                 await activity.update(ActivityContent(state: contentState, staleDate: nil))
             }
+            LiveActivityDiagnostics.record("Updated the \(type.rawValue) Live Activity")
         } else {
             let attributes = VehicleActivityAttributes(
                 vehicleName: vehicle.displayName,
@@ -451,12 +472,14 @@ final class LiveActivityManager {
                     content: ActivityContent(state: contentState, staleDate: nil),
                     pushType: nil // We don't use Live Activity push tokens anymore
                 )
+                LiveActivityDiagnostics.record("Started a \(type.rawValue) Live Activity")
                 // Register with backend for wakeup pushes with the activity type
                 Task {
                     await registerWithBackend(activityType: type)
                 }
             } catch {
                 AppLogger.liveActivity.error("Error requesting activity: \(error)")
+                LiveActivityDiagnostics.record("iOS refused to start the Live Activity: \(error.localizedDescription) (\(String(describing: error)))")
             }
         }
         #endif
@@ -465,6 +488,7 @@ final class LiveActivityManager {
     private func registerWithBackend(activityType: LiveActivityType = .charging) async {
         guard let deviceToken = deviceToken else {
             AppLogger.liveActivity.warning("No device token available for backend registration")
+            LiveActivityDiagnostics.record("Started, but no push token yet, so it won't update in the background")
             return
         }
 
@@ -480,7 +504,10 @@ final class LiveActivityManager {
             return
         }
 
-        guard let url = URL(string: "\(liveActivityBackendURL)/wakeup") else { return }
+        guard let backend = liveActivityBackendURL, let url = URL(string: "\(backend)/wakeup") else {
+            AppLogger.liveActivity.info("No Live Activity backend configured; skipping wakeup registration")
+            return
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -497,19 +524,22 @@ final class LiveActivityManager {
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 200 {
                     isRegisteredWithBackend = true
+                    LiveActivityDiagnostics.record("Started and registered for background updates")
                     AppLogger.liveActivity.info("Registered with backend for wakeup pushes (type: \(activityType.rawValue, privacy: .public))")
                 } else {
                     AppLogger.liveActivity.error("Backend registration failed: \(httpResponse.statusCode)")
+                    LiveActivityDiagnostics.record("Started, but the update server refused it (HTTP \(httpResponse.statusCode))")
                 }
             }
         } catch {
             AppLogger.liveActivity.error("Backend registration error: \(error)")
+            LiveActivityDiagnostics.record("Started, but couldn't reach the update server: \(error.localizedDescription)")
         }
     }
 
     private func unregisterFromBackend() async {
         guard let deviceToken = deviceToken else { return }
-        guard let url = URL(string: "\(liveActivityBackendURL)/wakeup/unregister") else { return }
+        guard let backend = liveActivityBackendURL, let url = URL(string: "\(backend)/wakeup/unregister") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

@@ -136,7 +136,9 @@ struct NGlanceHomeView: View {
         ) {
             Task { await runner.setCharging(!charging, modelContext: modelContext) }
         }
-        .disabled(ev?.pluggedIn != true)
+        // Not gated on plug state: some cars report batteryPlugin 0
+        // while plugged in and idle; Hyundai rejects it if unplugged.
+        .disabled(ev == nil)
     }
 
     private var lockButton: some View {

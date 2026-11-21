@@ -155,9 +155,13 @@ struct NChargingView: View {
             ) {
                 Task { await runner.setCharging(!charging, modelContext: modelContext) }
             }
-            .disabled(ev?.pluggedIn != true)
-            if ev?.pluggedIn != true {
-                Text("Plug in to start charging")
+            // Not gated on plug state: some cars (a 2025 IONIQ 5 in
+            // Canada) report batteryPlugin 0 while plugged in and idle.
+            // Hyundai rejects the command if the car really is unplugged.
+            .disabled(ev == nil)
+            if ev?.pluggedIn != true, !charging {
+                Text("Car reports unplugged. If it's plugged in, Start charge still works.")
+                    .multilineTextAlignment(.center)
                     .font(.system(size: 12))
                     .foregroundStyle(NTheme.textSecondary)
             }

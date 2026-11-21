@@ -54,7 +54,7 @@ BetterBlue/
 ├── BetterBlueWatch Watch App/  # Apple Watch app
 ├── Widget/                     # iOS widgets, Control Center, Live Activities
 ├── WatchWidget/                # Watch complications
-├── LiveActivityBackend/        # Backend for Live Activity push notifications
+├── LiveActivityWorker/         # Cloudflare Worker for Live Activity wake-up pushes
 ├── BetterBlueKit/              # Swift package for API communication
 └── README.md                   # This file
 ```
@@ -110,7 +110,7 @@ swiftlint lint
 Live Activities display real-time charging progress on your Lock Screen and Dynamic Island. This feature is **off by default** and can be enabled in Settings > Widget Settings.
 
 ### How it works
-To keep the Live Activity updated, N Link uses a lightweight [backend service](LiveActivityBackend/) that sends silent push notifications to refresh the charging status periodically.
+To keep the Live Activity updated, N Link uses a lightweight [Cloudflare Worker](LiveActivityWorker/) that sends silent push notifications to refresh the charging status periodically.
 
 ### Privacy
 - No vehicle information is sent to the backend
@@ -118,7 +118,7 @@ To keep the Live Activity updated, N Link uses a lightweight [backend service](L
 - Only your device's push token is stored temporarily
 - Tokens are automatically deleted after 8 hours
 
-The backend is fully open source - see [LiveActivityBackend/](LiveActivityBackend/) for the source code.
+The backend is fully open source - see [LiveActivityWorker/](LiveActivityWorker/) for the source code and setup.
 
 ## Privacy & Security
 

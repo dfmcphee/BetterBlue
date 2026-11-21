@@ -22,6 +22,13 @@ enum AppIdentifiers {
         fallback: "iCloud.com.dfmcphee.NControl"
     )
 
+    /// Host of the Live Activity wake-up Worker, or nil when none is
+    /// configured (background refresh of Live Activities is then off).
+    nonisolated static let liveActivityHost: String? = {
+        let value = infoPlistValue(for: "BBLiveActivityHost", fallback: "")
+        return value.isEmpty ? nil : value
+    }()
+
     private nonisolated static func infoPlistValue(for key: String, fallback: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
               !value.isEmpty, !value.hasPrefix("$(") else {

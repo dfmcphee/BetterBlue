@@ -16,3 +16,7 @@ BB_BUNDLE_ID_PREFIX = com.yourname
 // With automatic signing, Xcode registers these for you on first build.
 BB_APP_GROUP = group.com.yourname.ncontrol
 BB_ICLOUD_CONTAINER = iCloud.com.yourname.NControl
+
+// Host of your deployed LiveActivityWorker, e.g.
+// nlink-live-activity.yourname.workers.dev (no "https://").
+BB_LIVE_ACTIVITY_HOST =

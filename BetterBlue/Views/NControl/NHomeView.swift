@@ -301,7 +301,10 @@ struct NHomeView: View {
             ) {
                 Task { await runner.setCharging(!charging, modelContext: modelContext) }
             }
-            .disabled(ev?.pluggedIn != true)
+            // Not gated on plug state: some cars (a 2025 IONIQ 5 in
+            // Canada) report batteryPlugin 0 while plugged in and idle.
+            // Hyundai rejects the command if the car really is unplugged.
+            .disabled(ev == nil)
         }
     }
 

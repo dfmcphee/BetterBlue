@@ -17,4 +17,9 @@ BB_APP_GROUP = group.com.dfmcphee.ncontrol
 // CloudKit container used for iCloud sync.
 BB_ICLOUD_CONTAINER = iCloud.com.dfmcphee.NControl
 
+// Host of the Live Activity wake-up Worker (LiveActivityWorker/), without
+// "https://" (xcconfig treats "//" as a comment). Empty disables
+// background Live Activity refresh.
+BB_LIVE_ACTIVITY_HOST = nlink-live-activity.dominic-mcphee.workers.dev
+
 #include? "Local.xcconfig"

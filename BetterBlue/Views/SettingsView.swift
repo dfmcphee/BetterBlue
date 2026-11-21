@@ -38,6 +38,7 @@ struct SettingsView: View {
     @State private var showingClearDataAlert = false
     @State private var clearDataResult: String?
     @State private var showingLiveActivitiesInfo = false
+    @AppStorage(LiveActivityDiagnostics.key) private var liveActivityLastEvent = ""
     @State private var showingExportSheet = false
 
     var body: some View {
@@ -126,6 +127,14 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                    }
+                    if appSettings.liveActivitiesEnabled, !liveActivityLastEvent.isEmpty {
+                        LabeledContent("Last Live Activity event") {
+                            Text(liveActivityLastEvent)
+                                .multilineTextAlignment(.trailing)
+                                .textSelection(.enabled)
+                        }
+                        .font(.footnote)
                     }
                 } header: {
                     Text("Widget Settings")
@@ -551,7 +560,7 @@ private struct LiveActivitiesInfoSheet: View {
                         .foregroundColor(.secondary)
 
                         Button {
-                            if let url = URL(string: "https://github.com/dfmcphee/BetterBlue/tree/main/LiveActivityBackend") {
+                            if let url = URL(string: "https://github.com/dfmcphee/BetterBlue/tree/main/LiveActivityWorker") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
