@@ -75,13 +75,11 @@ struct VehicleControlsWidget: View {
                     showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent
                 )
             } else {
-                UnifiedVehicleWidget(
+                NLinkMediumWidget(
                     vehicle: vehicle,
                     buttons: buttons,
                     textColor: textColor,
-                    showEVPercent: showEVPercent,
-                    showGasPercent: showGasPercent,
-                    isSmall: false
+                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent
                 )
             }
         }
