@@ -18,7 +18,7 @@ import WidgetKit
 @Observable
 final class VehicleCommandRunner {
     enum Action: Hashable {
-        case refresh, lock, climate, charge, limits
+        case refresh, lock, climate, climateAdjust, charge, limits
     }
 
     struct Banner: Identifiable {
@@ -36,6 +36,9 @@ final class VehicleCommandRunner {
     /// spinner stays on the button that was tapped even if the car's
     /// reported state flips mid-command.
     private(set) var pendingLockTarget: Bool?
+    /// The climate settings a live adjustment is driving toward, and which
+    /// part changed — shown in place of the car's report until it confirms.
+    private(set) var pendingClimate: (item: NClimateItem, options: ClimateOptions)?
 
     init(vehicle: BBVehicle) {
         self.vehicle = vehicle
@@ -109,6 +112,10 @@ final class VehicleCommandRunner {
                 presetName: presetName,
                 presetIcon: presetIcon
             )
+            NClimateSession.save(
+                NClimateSession(options: options, presetName: presetName, presetIcon: presetIcon),
+                vin: vehicle.vin
+            )
             try await vehicle.waitForStatusChange(
                 modelContext: modelContext,
                 condition: { $0.climateStatus.airControlOn },
@@ -119,12 +126,49 @@ final class VehicleCommandRunner {
         }
     }
 
+    /// Change one part of a running climate session. Hyundai/Kia have no
+    /// command for that — only "start climate with these settings" — so
+    /// this re-sends start with the change. It takes as long as a start
+    /// to reach the car, and only front defrost and the heated wheel are
+    /// reported back to confirm it.
+    func adjustClimate(_ item: NClimateItem, to options: ClimateOptions, modelContext: ModelContext) async {
+        guard let account = vehicle.account, !isBusy(.climate), !isBusy(.climateAdjust) else { return }
+        let session = NClimateSession.load(vin: vehicle.vin)
+        begin(.climateAdjust, "Sending to car")
+        pendingClimate = (item, options)
+        defer {
+            end(.climateAdjust)
+            pendingClimate = nil
+        }
+        do {
+            try await account.startClimate(
+                vehicle,
+                options: options,
+                modelContext: modelContext,
+                presetName: session?.presetName,
+                presetIcon: session?.presetIcon
+            )
+            NClimateSession.save(
+                NClimateSession(options: options, presetName: session?.presetName, presetIcon: session?.presetIcon),
+                vin: vehicle.vin
+            )
+            try await vehicle.waitForStatusChange(
+                modelContext: modelContext,
+                condition: { item.matches($0, options) },
+                statusMessageUpdater: updater(for: .climateAdjust)
+            )
+        } catch {
+            handle(error, action: "Change \(item.title.lowercased())")
+        }
+    }
+
     func stopClimate(modelContext: ModelContext) async {
         guard let account = vehicle.account, !isBusy(.climate) else { return }
         begin(.climate, "Stopping climate")
         defer { end(.climate) }
         do {
             try await account.stopClimate(vehicle, modelContext: modelContext)
+            NClimateSession.clear(vin: vehicle.vin)
             try? await account.fetchAndUpdateVehicleStatus(for: vehicle, modelContext: modelContext, cached: false)
             try await vehicle.waitForStatusChange(
                 modelContext: modelContext,

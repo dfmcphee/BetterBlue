@@ -63,8 +63,8 @@ struct NMapView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .padding(.horizontal, NTheme.screenHorizontal)
+            .padding(.top, NTheme.screenTop)
         }
     }
 
@@ -103,8 +103,8 @@ struct NMapView: View {
         .padding(18)
         .background(NTheme.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(NTheme.border))
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+        .padding(.horizontal, NTheme.screenHorizontal)
+        .padding(.bottom, 16)
     }
 
     @ViewBuilder

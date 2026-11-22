@@ -64,9 +64,9 @@ struct NTripsView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.horizontal, NTheme.screenHorizontal)
+            .padding(.top, NTheme.screenTop)
+            .padding(.bottom, NTheme.screenBottom)
         }
         .scrollIndicators(.hidden)
         .refreshable { await load() }

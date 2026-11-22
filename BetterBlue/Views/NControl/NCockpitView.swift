@@ -94,9 +94,10 @@ struct NCockpitView: View {
                            icon: vehicle.lockStatus == .locked ? "lock.fill" : "lock.open.fill")
             }
         }
-        .padding(.leading, 14)
+        .padding(.leading, NTheme.homeHorizontal)
         .padding(.trailing, 12)
-        .padding(.vertical, 14)
+        .padding(.top, NTheme.homeTop - 4)
+        .padding(.bottom, 16)
     }
 
     private var header: some View {

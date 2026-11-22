@@ -139,8 +139,8 @@ struct NRootView: View {
 
     private var tabBar: some View {
         NTabBar(selection: $tab)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 4)
+            .padding(.horizontal, NTheme.screenHorizontal)
+            .padding(.bottom, 12)
             .padding(.top, 8)
             .background(
                 LinearGradient(

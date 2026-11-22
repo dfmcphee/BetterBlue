@@ -38,9 +38,9 @@ struct NHomeView: View {
                     securityCard
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.horizontal, NTheme.homeHorizontal)
+            .padding(.top, NTheme.homeTop)
+            .padding(.bottom, NTheme.screenBottom)
         }
         .scrollIndicators(.hidden)
         .refreshable { await runner.refresh(modelContext: modelContext) }

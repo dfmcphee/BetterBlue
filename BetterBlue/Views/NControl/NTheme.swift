@@ -25,6 +25,19 @@ enum NTheme {
     static let onAccent = Color(hex: 0x0A0A0A)
     static let warning = Color(hex: 0xF2B33D)
 
+    /// Room between a screen's content and the status bar above it.
+    static let screenTop: CGFloat = 16
+    /// Room between a screen's content and the sides of the display.
+    static let screenHorizontal: CGFloat = 24
+
+    /// The Car (home) screen sits further in than the others: its big
+    /// vehicle name and gauge want more air around them.
+    static let homeTop: CGFloat = 32
+    static let homeHorizontal: CGFloat = 28
+    /// Room between a screen's content and the tab bar (or the bottom of
+    /// the screen) below it.
+    static let screenBottom: CGFloat = 24
+
     /// Condensed display numerals (stand-in for Barlow Condensed).
     static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
         .system(size: size, weight: weight).width(.condensed)
@@ -222,9 +235,9 @@ struct NPushedScreen<Content: View>: View {
                 NScreenHeader(title: title, subtitle: subtitle)
                 content()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 32)
+            .padding(.horizontal, NTheme.screenHorizontal)
+            .padding(.top, NTheme.screenTop)
+            .padding(.bottom, NTheme.screenBottom + 8)
         }
         .scrollIndicators(.hidden)
         .background(NTheme.ground.ignoresSafeArea())

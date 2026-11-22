@@ -41,8 +41,11 @@ struct NGlanceHomeView: View {
             statusStrip
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 10)
+        // Fixed-height, unscrolled layout on a short display: a little
+        // tighter than the scrolling screens.
+        .padding(.horizontal, NTheme.homeHorizontal - 2)
+        .padding(.top, NTheme.homeTop - 6)
+        .padding(.bottom, 8)
         .background(NTheme.ground.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: NDestination.self) { destination in
@@ -256,24 +259,10 @@ struct NGlanceHomeView: View {
                 }
             }
             HStack(spacing: 6) {
-                if showsSeats {
-                    let level = options.frontLeftSeat
-                    chip("Seat", level > 0 ? "Heat \(level)" : "Off", isOn: level > 0) {
-                        edit {
-                            $0.frontLeftSeat = ($0.frontLeftSeat + 1) % 4
-                            $0.frontLeftVentilationEnabled = false
-                        }
-                    }
-                }
-                chip("Wheel", options.steeringWheel > 0 ? "On" : "Off", isOn: options.steeringWheel > 0) {
-                    edit { $0.steeringWheel = $0.steeringWheel > 0 ? 0 : 1 }
-                }
-                chip("Front", options.defrost ? "Defrost" : "Off", isOn: options.defrost) {
-                    edit { $0.defrost.toggle() }
-                }
-                chip("Rear", options.rearDefrostEnabled ? "Defrost" : "Off", isOn: options.rearDefrostEnabled) {
-                    edit { $0.rearDefrostEnabled.toggle() }
-                }
+                if showsSeats { climateChip(.driverSeat, title: "Seat") }
+                climateChip(.steeringWheel, title: "Wheel")
+                climateChip(.frontDefrost, title: "Front")
+                climateChip(.rearDefrost, title: "Rear")
             }
             NCommandButton(
                 title: climateOn ? "Stop climate" : startTitle,
@@ -333,28 +322,57 @@ struct NGlanceHomeView: View {
         .accessibilityHint(enabled ? "" : "Stop climate to change the temperature")
     }
 
-    private func chip(_ title: String, _ value: String, isOn: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 1) {
-                Text(title).font(.system(size: 12, weight: .semibold))
-                Text(value)
-                    .font(.system(size: 11))
-                    .foregroundStyle(isOn ? NTheme.onAccent.opacity(0.7) : NTheme.textSecondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .foregroundStyle(isOn ? NTheme.onAccent : NTheme.text)
-            .background(isOn ? NTheme.accent : NTheme.cardRaised,
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                if !isOn {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(NTheme.border)
+    /// While climate runs: live, solid orange when on, and a tap re-sends
+    /// start with the change. While it's off: the selected preset's start
+    /// settings, never orange (nothing's running), and a tap opens the
+    /// Climate screen, where presets are edited.
+    @ViewBuilder
+    private func climateChip(_ item: NClimateItem, title: String) -> some View {
+        if climateOn {
+            let live = runner.pendingClimate?.options ?? vehicle.runningClimateOptions
+            let isPending = runner.pendingClimate?.item == item
+            Button {
+                var updated = live
+                if item == .driverSeat {
+                    updated.frontLeftSeat = (live.frontLeftSeat + 1) % 4
+                    updated.frontLeftVentilationEnabled = false
+                } else {
+                    updated.setOn(item, !live.isOn(item))
                 }
+                Task { await runner.adjustClimate(item, to: updated, modelContext: modelContext) }
+            } label: {
+                chipLabel(title, isPending ? "Sending" : live.valueText(item), isOn: live.isOn(item))
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(runner.isBusy(.climate) || runner.isBusy(.climateAdjust))
+            .accessibilityLabel("\(title), \(live.valueText(item))")
+        } else {
+            NavigationLink(value: NDestination.climate) {
+                chipLabel(title, options.valueText(item), isOn: false, valueIsSet: options.isOn(item))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(title), starts \(options.valueText(item))")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(title), \(value)")
-        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private func chipLabel(_ title: String, _ value: String, isOn: Bool, valueIsSet: Bool = false) -> some View {
+        VStack(spacing: 1) {
+            Text(title).font(.system(size: 12, weight: .semibold))
+            Text(value)
+                .font(.system(size: 11))
+                .foregroundStyle(isOn ? NTheme.onAccent.opacity(0.7)
+                                 : (valueIsSet ? NTheme.text : NTheme.textSecondary))
+        }
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .foregroundStyle(isOn ? NTheme.onAccent : NTheme.text)
+        .background(isOn ? NTheme.accent : NTheme.cardRaised,
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            if !isOn {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(NTheme.border)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     // MARK: - Status strip
