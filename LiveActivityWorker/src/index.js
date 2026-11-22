@@ -86,7 +86,7 @@ async function sendWakeUps(env) {
 
   const { results } = await env.DB.prepare('SELECT * FROM registrations').all();
   const due = results.filter((row) => {
-    const intervalMs = (WAKEUP_INTERVALS[row.activity_type] ?? 5) * 60 * 1000;
+    const intervalMs = intervalMsFor(row.activity_type);
     return !row.last_push_time || now - row.last_push_time >= intervalMs;
   });
 
@@ -96,7 +96,7 @@ async function sendWakeUps(env) {
     await Promise.all(due.map(async (row) => {
       const short = row.push_token.slice(0, 8);
       try {
-        const result = await sendBackgroundPush(env, providerToken, row.push_token, now);
+        const result = await sendBackgroundPush(env, providerToken, row.push_token, now, intervalMsFor(row.activity_type));
         if (result.ok) {
           sent++;
           await env.DB.prepare(
@@ -120,7 +120,17 @@ async function sendWakeUps(env) {
 
 // MARK: - APNs
 
-async function sendBackgroundPush(env, providerToken, pushToken, now) {
+function intervalMsFor(activityType) {
+  return (WAKEUP_INTERVALS[activityType] ?? 5) * 60 * 1000;
+}
+
+async function sendBackgroundPush(env, providerToken, pushToken, now, intervalMs) {
+  // Keep the push alive until just before the next one is due. A 1-minute
+  // expiry meant APNs discarded the wakeup whenever the phone was asleep or
+  // off the network for that minute, on top of iOS deferring low-priority
+  // background pushes — so most charging wakeups never arrived. iOS keeps
+  // only the newest background push per app, so they can't pile up.
+  const ttlSeconds = Math.max(60, intervalMs / 1000 - 10);
   const response = await fetch(`https://${env.APNS_HOST}/3/device/${pushToken}`, {
     method: 'POST',
     headers: {
@@ -128,7 +138,7 @@ async function sendBackgroundPush(env, providerToken, pushToken, now) {
       'apns-topic': env.APNS_TOPIC,
       'apns-push-type': 'background',
       'apns-priority': '5', // Background pushes must use priority 5.
-      'apns-expiration': String(Math.floor(now / 1000) + 60),
+      'apns-expiration': String(Math.floor(now / 1000) + ttlSeconds),
       'content-type': 'application/json',
     },
     body: JSON.stringify({ aps: { 'content-available': 1 }, liveActivityWakeup: true }),

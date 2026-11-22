@@ -8,117 +8,169 @@ struct VehicleActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: VehicleActivityAttributes.self) { context in
             // Lock screen/banner UI
-            VehicleActivityContentView(context: context, isLockScreen: true)
+            VehicleActivityContentView(context: context)
         } dynamicIsland: { context in
-            DynamicIsland {
-                // Expanded UI
+            let model = VehicleActivityModel(context: context)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    if context.state.activityType == .debug {
-                        Image(systemName: "ant")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.orange)
-                            .padding(.leading, 8)
-                    } else if context.state.activityType == .climate {
-                        Image(systemName: context.state.climatePresetIcon ?? "fan")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(CustomColor.color(
-                                forName: context.attributes.startClimateColorName,
-                                default: "blue"
-                            ))
-                            .padding(.leading, 8)
-                    } else {
-                        Text(formattedRange(for: context.state.status))
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .padding(.leading, 8)
+                    VStack(alignment: .leading, spacing: 2) {
+                        ActivityCapsLabel(model.statusLabel, color: ActivityStyle.accent)
+                        ActivityHeadline(model: model, size: 34)
                     }
+                    .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if context.state.activityType == .debug {
-                        Text("#\(context.state.wakeupCount)")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .padding(.trailing, 8)
-                    } else if context.state.activityType == .climate,
-                              context.state.status.climateStatus.temperature.isPlausibleForDisplay {
-                        let temp = context.state.status.climateStatus.temperature
-                        Text("\(Int(temp.value))\(temp.units.symbol)")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .padding(.trailing, 8)
-                    } else {
-                        Text("\(batteryPercentage(for: context.state.status))%")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .padding(.trailing, 8)
-                    }
+                    ActivitySideMetric(model: model)
+                        .padding(.trailing, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     DynamicIslandExpandedContentView(context: context)
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, 6)
+                        .padding(.bottom, 6)
                 }
             } compactLeading: {
-                if context.state.activityType == .debug {
-                    Image(systemName: "ant")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(.orange)
-                } else if context.state.activityType == .climate {
-                    Image(systemName: context.state.climatePresetIcon ?? "fan")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(CustomColor.color(
-                            forName: context.attributes.startClimateColorName,
-                            default: "blue"
-                        ))
-                } else {
+                if model.showsBattery {
                     CompactIslandText(
-                        text: formattedRange(for: context.state.status),
-                        limitedWidthText: formattedRange(for: context.state.status, includesUnit: false),
+                        text: model.formattedRange(),
+                        limitedWidthText: model.formattedRange(includesUnit: false),
                         cameraEdge: .trailing
                     )
+                } else {
+                    Image(systemName: model.statusIcon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(ActivityStyle.accent)
                 }
             } compactTrailing: {
-                if context.state.activityType == .debug {
-                    CompactIslandText(text: "#\(context.state.wakeupCount)", cameraEdge: .leading)
-                } else if context.state.activityType == .climate,
-                          context.state.status.climateStatus.temperature.isPlausibleForDisplay {
-                    let temp = context.state.status.climateStatus.temperature
-                    CompactIslandText(text: "\(Int(temp.value))\(temp.units.symbol)", cameraEdge: .leading)
-                } else {
-                    CompactIslandText(text: "\(batteryPercentage(for: context.state.status))%", cameraEdge: .leading)
-                }
+                CompactIslandText(text: model.trailingMetric, cameraEdge: .leading, tint: ActivityStyle.accent)
             } minimal: {
-                if context.state.activityType == .debug {
-                    Image(systemName: "ant")
-                        .font(.caption2)
-                        .foregroundColor(.orange)
-                } else if context.state.activityType == .climate {
-                    Image(systemName: context.state.climatePresetIcon ?? "fan")
-                        .font(.caption2)
-                        .foregroundColor(CustomColor.color(
-                            forName: context.attributes.startClimateColorName,
-                            default: "blue"
-                        ))
-                } else {
-                    Text("\(batteryPercentage(for: context.state.status))%")
-                        .font(.caption2)
+                if model.showsBattery {
+                    Text("\(model.batteryPercentage)%")
+                        .font(ActivityStyle.display(13))
+                        .foregroundStyle(ActivityStyle.accent)
                         .compactIslandText()
+                } else {
+                    Image(systemName: model.statusIcon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(ActivityStyle.accent)
                 }
             }
             .widgetURL(URL(string: "betterblue://vehicle/\(context.attributes.vin)"))
-            .keylineTint(.green)
+            .keylineTint(ActivityStyle.accent)
+        }
+    }
+}
+
+// MARK: - Style
+
+/// The app's N Link "telemetry" tokens (`NTheme`, which the widget
+/// extension doesn't compile): near-black ground, condensed numerals and a
+/// single Luminous Orange accent.
+private enum ActivityStyle {
+    static let ground = Color(hex: 0x050505)
+    static let track = Color(hex: 0x262626)
+    static let border = Color(hex: 0x333333)
+    static let text = Color(hex: 0xF2F2F2)
+    static let textSecondary = Color(hex: 0xA3A3A3)
+    /// Luminous Orange — the IONIQ 5 N highlight.
+    static let accent = Color(hex: 0xEA4A2A)
+    static let onAccent = Color(hex: 0x0A0A0A)
+    static let warning = Color(hex: 0xF2B33D)
+
+    static let margin: CGFloat = 16
+
+    /// Condensed display numerals, as the app's gauges use.
+    static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        .system(size: size, weight: weight).width(.condensed)
+    }
+}
+
+private extension Color {
+    init(hex: UInt32) {
+        self.init(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255
+        )
+    }
+}
+
+// MARK: - Model
+
+/// Everything the Live Activity shows, worked out once from its context
+/// and phrased the way the app's charging and climate screens phrase it.
+struct VehicleActivityModel {
+    let state: VehicleActivityAttributes.ContentState
+    let attributes: VehicleActivityAttributes
+    /// Past the content's stale date: background wakeups have stopped
+    /// arriving, so the numbers may be well behind the vehicle.
+    let isStale: Bool
+
+    init(context: ActivityViewContext<VehicleActivityAttributes>) {
+        state = context.state
+        attributes = context.attributes
+        isStale = context.isStale
+    }
+
+    /// Charging (and the plain status activity) lead with the battery;
+    /// climate and debug lead with their own status.
+    var showsBattery: Bool {
+        state.activityType == .charging || state.activityType == .none
+    }
+
+    var statusIcon: String {
+        switch state.activityType {
+        case .climate: state.climatePresetIcon ?? "fan"
+        case .debug: "ant"
+        case .charging, .none: "bolt.fill"
         }
     }
 
-    func formattedRange(for status: VehicleStatus, includesUnit: Bool = true) -> String {
+    var hasStopButton: Bool {
+        state.activityType == .climate || state.activityType == .debug
+    }
+
+    /// The small caps line above the headline number, e.g.
+    /// "CHARGING · 7.2 KW" — as the app's charging screen subtitle.
+    var statusLabel: String {
+        switch state.activityType {
+        case .charging, .none:
+            guard let evStatus else { return "Battery" }
+            if evStatus.charging {
+                return chargeSpeed.map { "Charging · \($0)" } ?? "Charging"
+            }
+            return evStatus.pluggedIn ? "Not charging" : "Unplugged"
+        case .climate:
+            guard state.activityState == .running else {
+                return state.activityType.message(for: state.activityState)
+            }
+            return "Climate on"
+        case .debug:
+            return "Debug"
+        }
+    }
+
+    // MARK: Charging
+
+    var evStatus: VehicleStatus.EVStatus? { state.status.evStatus }
+
+    var batteryPercentage: Int {
+        if let evStatus = state.status.evStatus {
+            return Int(evStatus.evRange.percentage.rounded())
+        } else if let gasRange = state.status.gasRange {
+            return Int(gasRange.percentage.rounded())
+        }
+        return 0
+    }
+
+    var chargeLimit: Double? {
+        evStatus?.currentTargetSOC ?? evStatus?.targetSocAC
+    }
+
+    func formattedRange(includesUnit: Bool = true) -> String {
         let range: Distance
-        if let evStatus = status.evStatus, evStatus.evRange.range.length > 0 {
+        if let evStatus = state.status.evStatus, evStatus.evRange.range.length > 0 {
             range = evStatus.evRange.range
-        } else if let gasRange = status.gasRange, gasRange.range.length > 0 {
+        } else if let gasRange = state.status.gasRange, gasRange.range.length > 0 {
             range = gasRange.range
         } else {
             return "--"
@@ -131,13 +183,353 @@ struct VehicleActivityWidget: Widget {
         return range.units.format(range.length, to: preferredUnit)
     }
 
-    func batteryPercentage(for status: VehicleStatus) -> Int {
-        if let evStatus = status.evStatus {
-            return Int(evStatus.evRange.percentage)
-        } else if let gasRange = status.gasRange {
-            return Int(gasRange.percentage)
+    /// One decimal, as the app's charging screen.
+    var chargeSpeed: String? {
+        guard let evStatus, evStatus.chargeSpeed > 0 else { return nil }
+        return String(format: "%.1f kW", evStatus.chargeSpeed)
+    }
+
+    /// When charging should finish. Absolute rather than "1h 20m left",
+    /// because the activity's text only changes when a wakeup lands —
+    /// a finish time stays right between updates; a countdown wouldn't.
+    var finishDate: Date? {
+        guard let evStatus, evStatus.charging else { return nil }
+        let seconds = evStatus.chargeTime.components.seconds
+        guard seconds > 0 else { return nil }
+        let reported = state.status.syncDate ?? state.status.lastUpdated
+        return reported.addingTimeInterval(TimeInterval(seconds))
+    }
+
+    // MARK: Climate
+
+    var temperature: String? {
+        let temp = state.status.climateStatus.temperature
+        guard temp.isPlausibleForDisplay else { return nil }
+        return temp.units.format(temp.value, to: AppSettings.liveTemperatureUnit())
+    }
+
+    var climateDetailText: String? {
+        state.climatePresetName.map { "\($0) preset" }
+    }
+
+    // MARK: Debug
+
+    var debugDetailText: String {
+        if let lastWakeup = state.lastWakeupTime {
+            return "Last wakeup \(lastWakeup.formatted(date: .omitted, time: .shortened))"
         }
-        return 0
+        return "Waiting for wakeup…"
+    }
+
+    // MARK: Dynamic Island
+
+    var trailingMetric: String {
+        switch state.activityType {
+        case .climate: temperature ?? "On"
+        case .debug: "#\(state.wakeupCount)"
+        case .charging, .none: "\(batteryPercentage)%"
+        }
+    }
+}
+
+// MARK: - Lock screen
+
+/// Lock screen and banner presentation, laid out like the app's charging
+/// card: vehicle name, the big condensed percentage beside the range, the
+/// orange block bar with its limit tick, then the stats.
+struct VehicleActivityContentView: View {
+    let context: ActivityViewContext<VehicleActivityAttributes>
+
+    private var model: VehicleActivityModel { VehicleActivityModel(context: context) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(context.attributes.vehicleName.uppercased())
+                    .font(ActivityStyle.display(17, weight: .bold))
+                    .foregroundStyle(ActivityStyle.text)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                ActivityUpdatedText(model: model)
+                    .font(.system(size: 11))
+            }
+
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ActivityCapsLabel(model.statusLabel, color: ActivityStyle.accent)
+                    ActivityHeadline(model: model, size: 40)
+                }
+                Spacer(minLength: 8)
+                if model.hasStopButton {
+                    ActivityStopButton(model: model, vin: context.attributes.vin, diameter: 44)
+                } else {
+                    ActivitySideMetric(model: model)
+                }
+            }
+
+            switch context.state.activityType {
+            case .charging, .none:
+                ActivityBlockBar(model: model)
+                ActivityStatsRow(model: model)
+            case .climate:
+                if let detail = model.climateDetailText {
+                    ActivityDetailText(detail)
+                }
+            case .debug:
+                ActivityDetailText(model.debugDetailText)
+            }
+        }
+        .padding(ActivityStyle.margin)
+        // The app's ground, so the activity reads as part of it on any
+        // wallpaper; the content is drawn for that dark surface.
+        .activityBackgroundTint(ActivityStyle.ground.opacity(0.94))
+        .activitySystemActionForegroundColor(ActivityStyle.text)
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+// MARK: - Dynamic Island
+
+/// Bottom of the expanded island: the bar and stats for charging, the
+/// stop button for climate/debug, and an understated footer.
+struct DynamicIslandExpandedContentView: View {
+    let context: ActivityViewContext<VehicleActivityAttributes>
+
+    private var model: VehicleActivityModel { VehicleActivityModel(context: context) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            switch context.state.activityType {
+            case .charging, .none:
+                ActivityBlockBar(model: model)
+                ActivityStatsRow(model: model)
+            case .climate, .debug:
+                HStack(spacing: 12) {
+                    ActivityDetailText(
+                        context.state.activityType == .debug ? model.debugDetailText : model.climateDetailText ?? ""
+                    )
+                    Spacer(minLength: 0)
+                    ActivityStopButton(model: model, vin: context.attributes.vin, diameter: 34)
+                }
+            }
+
+            HStack {
+                Text(context.attributes.vehicleName.uppercased())
+                    .font(ActivityStyle.display(13, weight: .bold))
+                    .foregroundStyle(ActivityStyle.textSecondary)
+                    .lineLimit(1)
+                Spacer()
+                ActivityUpdatedText(model: model)
+            }
+            .font(.system(size: 11))
+        }
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+// MARK: - Components
+
+/// Small tracked caps label, e.g. "CHARGING · 7.2 KW" (`NCapsLabel`).
+private struct ActivityCapsLabel: View {
+    let text: String
+    var color: Color = ActivityStyle.textSecondary
+
+    init(_ text: String, color: Color = ActivityStyle.textSecondary) {
+        self.text = text
+        self.color = color
+    }
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(1)
+            .foregroundStyle(color)
+            .lineLimit(1)
+    }
+}
+
+/// The headline number: "65%" for charging, the temperature for climate,
+/// the wakeup count for debug — big condensed numerals with a smaller,
+/// dimmer unit, as on the app's charging card.
+private struct ActivityHeadline: View {
+    let model: VehicleActivityModel
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            switch model.state.activityType {
+            case .charging, .none:
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text("\(model.batteryPercentage)")
+                        .font(ActivityStyle.display(size, weight: .bold))
+                        .monospacedDigit()
+                    Text("%")
+                        .font(ActivityStyle.display(size * 0.42))
+                        .foregroundStyle(ActivityStyle.textSecondary)
+                }
+            case .climate:
+                Text(model.temperature ?? "On")
+                    .font(ActivityStyle.display(size, weight: .bold))
+            case .debug:
+                Text("#\(model.state.wakeupCount)")
+                    .font(ActivityStyle.display(size, weight: .bold))
+                    .monospacedDigit()
+            }
+        }
+        .foregroundStyle(ActivityStyle.text)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+    }
+}
+
+/// Range on the right of the headline, as the app's charging card.
+private struct ActivitySideMetric: View {
+    let model: VehicleActivityModel
+
+    var body: some View {
+        if model.showsBattery {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(model.formattedRange())
+                    .font(ActivityStyle.display(22))
+                    .foregroundStyle(ActivityStyle.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text("estimated range")
+                    .font(.system(size: 11))
+                    .foregroundStyle(ActivityStyle.textSecondary)
+            }
+        } else {
+            Image(systemName: model.statusIcon)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(ActivityStyle.accent)
+        }
+    }
+}
+
+/// The app's segmented charge bar (`NBlockBar`): orange blocks up to the
+/// charge level and a white tick at the limit.
+private struct ActivityBlockBar: View {
+    let model: VehicleActivityModel
+    var blocks = 20
+    var height: CGFloat = 14
+
+    var body: some View {
+        let value = Double(model.batteryPercentage) / 100
+        let limit = model.chargeLimit.map { $0 / 100 }
+        GeometryReader { geo in
+            let spacing: CGFloat = 3
+            let width = (geo.size.width - spacing * CGFloat(blocks - 1)) / CGFloat(blocks)
+            let filled = Int((value * Double(blocks)).rounded())
+            ZStack(alignment: .leading) {
+                HStack(spacing: spacing) {
+                    ForEach(0..<blocks, id: \.self) { index in
+                        Rectangle()
+                            .fill(index < filled ? ActivityStyle.accent : ActivityStyle.track)
+                            .frame(width: width)
+                    }
+                }
+                .frame(height: height)
+                if let limit {
+                    Rectangle()
+                        .fill(ActivityStyle.text)
+                        .frame(width: 2.5, height: height + 6)
+                        .offset(x: geo.size.width * min(max(limit, 0), 1) - 1.25)
+                }
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(height: height + 6)
+        .accessibilityHidden(true)
+    }
+}
+
+/// FINISH · POWER · LIMIT, as the stats under the app's charging card.
+private struct ActivityStatsRow: View {
+    let model: VehicleActivityModel
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            stat("Finish") {
+                if let finish = model.finishDate {
+                    Text(finish, style: .time)
+                } else {
+                    Text("—")
+                }
+            }
+            stat("Power") { Text(model.chargeSpeed ?? "—") }
+            stat("Limit") { Text(model.chargeLimit.map { "\(Int($0))%" } ?? "—") }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func stat(_ label: String, @ViewBuilder value: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            ActivityCapsLabel(label)
+            value()
+                .font(ActivityStyle.display(17))
+                .foregroundStyle(ActivityStyle.text)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct ActivityDetailText: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(ActivityStyle.textSecondary)
+            .lineLimit(1)
+    }
+}
+
+/// Round stop button in the app's primary style: orange with a dark glyph.
+private struct ActivityStopButton: View {
+    let model: VehicleActivityModel
+    let vin: String
+    let diameter: CGFloat
+
+    var body: some View {
+        Button(intent: StopLiveActivityIntent(vin: vin, activityType: model.state.activityType)) {
+            Image(systemName: "stop.fill")
+                .font(.system(size: diameter * 0.38, weight: .semibold))
+                .foregroundStyle(ActivityStyle.onAccent)
+                .frame(width: diameter, height: diameter)
+                .background(ActivityStyle.accent, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.state.isRefreshing)
+        .opacity(model.state.isRefreshing ? 0.45 : 1)
+        .accessibilityLabel("Stop")
+    }
+}
+
+private struct ActivityUpdatedText: View {
+    let model: VehicleActivityModel
+
+    var body: some View {
+        if model.state.isRefreshing {
+            HStack(spacing: 4) {
+                ProgressView()
+                    .controlSize(.mini)
+                    .tint(ActivityStyle.textSecondary)
+                Text("Refreshing…")
+            }
+            .foregroundStyle(ActivityStyle.textSecondary)
+        } else if model.isStale {
+            // A clock time reads as current; say how old it is instead,
+            // and the system keeps the count going without an update.
+            HStack(spacing: 4) {
+                Image(systemName: "clock.badge.exclamationmark")
+                Text("Updated \(model.state.status.lastUpdated, style: .relative) ago")
+            }
+            .foregroundStyle(ActivityStyle.warning)
+        } else {
+            Text("Updated \(model.state.status.lastUpdated, style: .time)")
+                .foregroundStyle(ActivityStyle.textSecondary)
+        }
     }
 }
 
@@ -169,6 +561,7 @@ private struct CompactIslandText: View {
     /// The slot's side facing the camera: trailing for compact leading,
     /// leading for compact trailing.
     let cameraEdge: HorizontalEdge
+    var tint: Color = ActivityStyle.text
 
     /// Covers the camera's overlap with a limited-width slot (4.3–5.7 pt).
     private static let cameraClearance: CGFloat = 7
@@ -183,8 +576,8 @@ private struct CompactIslandText: View {
 
     private func label(isLimited: Bool) -> some View {
         Text(isLimited ? limitedWidthText ?? text : text)
-            .font(.caption2)
-            .fontWeight(.medium)
+            .font(ActivityStyle.display(14))
+            .foregroundStyle(tint)
             .compactIslandText()
             .padding(cameraEdge == .leading ? .leading : .trailing, isLimited ? Self.cameraClearance : 0)
     }
@@ -200,130 +593,6 @@ private struct LimitedWidthReader<Content: View>: View {
     }
 }
 
-/// Content view for Dynamic Island expanded region
-struct DynamicIslandExpandedContentView: View {
-    let context: ActivityViewContext<VehicleActivityAttributes>
-
-    private var evStatus: VehicleStatus.EVStatus? {
-        context.state.status.evStatus
-    }
-
-    private var batteryPercentage: Int {
-        Int(evStatus?.evRange.percentage ?? 0)
-    }
-
-    private var chargeSpeed: String? {
-        guard let evStatus, evStatus.chargeSpeed > 0 else { return nil }
-        return String(format: "%.1f kW", evStatus.chargeSpeed)
-    }
-
-    private var chargeTimeRemaining: String? {
-        guard let evStatus else { return nil }
-        let duration = evStatus.chargeTime
-        guard duration > .seconds(0) else { return nil }
-        let formattedTime = duration.formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
-        if let targetSOC = evStatus.currentTargetSOC {
-            return "\(formattedTime) to \(Int(targetSOC))%"
-        }
-        return formattedTime
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            // Progress bar for charging
-            if context.state.activityType == .charging {
-                EVChargingProgressView(
-                    batteryPercentage: batteryPercentage,
-                    isCharging: true,
-                    chargeSpeed: chargeSpeed,
-                    chargeTimeRemaining: chargeTimeRemaining,
-                    targetSOC: evStatus?.currentTargetSOC,
-                    showHeader: false,
-                    chargingColor: CustomColor.color(
-                        forName: context.attributes.chargingColorName,
-                        default: "green"
-                    )
-                )
-            }
-
-            // Climate status
-            if context.state.activityType == .climate {
-                HStack {
-                    if let presetName = context.state.climatePresetName {
-                        Text("\(presetName) Climate Preset Active")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    } else {
-                        Text(context.state.activityType.message(for: context.state.activityState))
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    }
-                    Spacer()
-                }
-            }
-
-            // Debug status
-            if context.state.activityType == .debug {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Debug Live Activity")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        if let lastWakeup = context.state.lastWakeupTime {
-                            Text("Last wakeup: \(lastWakeup, style: .time)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("No wakeups yet")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    Spacer()
-                }
-            }
-
-            // Footer with refresh status and action buttons.
-            // Vehicle name + "Updated …" both use caption2/secondary
-            // so the footer reads as a single understated metadata
-            // row instead of the name dominating the card. The lone
-            // Spacer between name and time pushes the time all the
-            // way to the trailing edge (or just inside the stop
-            // button when one is present).
-            HStack {
-                if context.state.isRefreshing {
-                    ProgressView()
-                        .scaleEffect(0.6)
-                    Text("Refreshing...")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                } else {
-                    Text(context.attributes.vehicleName)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("Updated \(context.state.status.lastUpdated, style: .time)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-
-                // Stop button (only for climate and debug, not charging)
-                if context.state.activityType != .charging {
-                    Button(intent: StopLiveActivityIntent(vin: context.attributes.vin, activityType: context.state.activityType)) {
-                        Image(systemName: context.state.activityType == .climate ? "power" : "stop.fill")
-                            .font(.caption2)
-                            .foregroundColor(.red)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(context.state.isRefreshing)
-                    .padding(.leading, 8)
-                }
-            }
-        }
-    }
-
-}
 
 #Preview("Charging", as: .content, using: VehicleActivityAttributes(vehicleName: "My Ioniq 5", vin: "VIN123", vehicleId: UUID())) {
     VehicleActivityWidget()
@@ -459,161 +728,4 @@ struct DynamicIslandExpandedContentView: View {
         climatePresetName: "Warm Up",
         climatePresetIcon: "sun.max"
     )
-}
-
-struct VehicleActivityContentView: View {
-    let context: ActivityViewContext<VehicleActivityAttributes>
-    let isLockScreen: Bool
-
-    private var evStatus: VehicleStatus.EVStatus? {
-        context.state.status.evStatus
-    }
-
-    private var batteryPercentage: Int {
-        Int(evStatus?.evRange.percentage ?? 0)
-    }
-
-    private var chargeSpeed: String? {
-        guard let evStatus, evStatus.chargeSpeed > 0 else { return nil }
-        return String(format: "%.1f kW", evStatus.chargeSpeed)
-    }
-
-    private var chargeTimeRemaining: String? {
-        guard let evStatus else { return nil }
-        let duration = evStatus.chargeTime
-        guard duration > .seconds(0) else { return nil }
-        let formattedTime = duration.formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
-        if let targetSOC = evStatus.currentTargetSOC {
-            return "\(formattedTime) to \(Int(targetSOC))%"
-        }
-        return formattedTime
-    }
-
-    private var formattedRange: String {
-        guard let evStatus, evStatus.evRange.range.length > 0 else { return "--" }
-        return evStatus.evRange.range.units.format(evStatus.evRange.range.length, to: AppSettings.liveDistanceUnit())
-    }
-
-    var body: some View {
-        VStack(spacing: 12) {
-            // Charging activity uses shared EVChargingProgressView (no icon for Live Activity)
-            if context.state.activityType == .charging, isLockScreen {
-                EVChargingProgressView(
-                    formattedRange: formattedRange,
-                    batteryPercentage: batteryPercentage,
-                    isCharging: true,
-                    chargeSpeed: chargeSpeed,
-                    chargeTimeRemaining: chargeTimeRemaining,
-                    targetSOC: evStatus?.currentTargetSOC,
-                    chargingColor: CustomColor.color(
-                        forName: context.attributes.chargingColorName,
-                        default: "green"
-                    )
-                )
-            }
-
-            // Climate status (if climate is running)
-            if context.state.activityType == .climate, isLockScreen {
-                HStack(spacing: 12) {
-                    Image(systemName: context.state.climatePresetIcon ?? "fan")
-                        .font(.title2)
-                        .foregroundColor(CustomColor.color(
-                            forName: context.attributes.startClimateColorName,
-                            default: "blue"
-                        ))
-
-                    if let presetName = context.state.climatePresetName {
-                        Text("\(presetName) Climate Preset Active")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    } else {
-                        Text(context.state.activityType.message(for: context.state.activityState))
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    }
-
-                    Spacer()
-
-                    if context.state.status.climateStatus.temperature.isPlausibleForDisplay {
-                        let temp = context.state.status.climateStatus.temperature
-                        Text("\(Int(temp.value))\(temp.units.symbol)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
-
-            // Debug status (if debug is running)
-            if context.state.activityType == .debug, isLockScreen {
-                HStack(spacing: 12) {
-                    Image(systemName: "ant")
-                        .font(.title2)
-                        .foregroundColor(.orange)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Debug Live Activity")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        if let lastWakeup = context.state.lastWakeupTime {
-                            Text("Last wakeup: \(lastWakeup, style: .time)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Waiting for wakeup...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    Text("#\(context.state.wakeupCount)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-            }
-
-            // Footer with action buttons. Vehicle name leads, time
-            // pushed to the trailing edge — same treatment as the
-            // content-card footer above so the two layouts read
-            // consistently.
-            HStack {
-                if context.state.isRefreshing {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                    Text("Refreshing...")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                } else {
-                    Text(context.attributes.vehicleName)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("Updated \(context.state.status.lastUpdated, style: .time)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-
-                // Stop button (only for climate and debug, not charging)
-                if context.state.activityType != .charging {
-                    Button(intent: StopLiveActivityIntent(vin: context.attributes.vin, activityType: context.state.activityType)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: context.state.activityType == .climate ? "power" : "stop.fill")
-                            Text("Stop")
-                        }
-                        .font(.caption2)
-                        .foregroundColor(.red)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(context.state.isRefreshing)
-                    .padding(.leading, 8)
-                }
-            }
-        }
-        .padding(isLockScreen ? 16 : 0)
-        .activityBackgroundTint(Color.black.opacity(0.8))
-        .activitySystemActionForegroundColor(Color.white)
-    }
 }

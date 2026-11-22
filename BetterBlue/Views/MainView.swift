@@ -126,6 +126,8 @@ struct MainView: View {
                 BBLogger.info(.app, "[SVI-\(instanceTag)] scenePhase \(old) → \(new) (idx=\(selectedVehicleIndex), count=\(displayedVehicles.count))")
                 if new == .background {
                     finishStoreWorkBeforeSuspension()
+                } else if new == .active {
+                    startChargingActivities()
                 }
             }
             .onAppear {
@@ -149,6 +151,9 @@ struct MainView: View {
                 Task {
                     await loadVehiclesForAllAccounts()
                 }
+                // Cold launch: `scenePhase` starts out active, so the
+                // onChange above doesn't fire for it.
+                startChargingActivities()
             }
             .onChange(of: currentVehicle?.location, initial: true) { _, _ in
                 // `initial: true` catches the cold-launch case
@@ -216,6 +221,16 @@ struct MainView: View {
                     await refreshCurrentVehicleIfNeeded(modelContext: modelContext)
                 }
             }
+    }
+
+    /// Opening the app while a car is already charging (started from the
+    /// car or a charger, or after the activity was dismissed): start its
+    /// Live Activity now, without waiting for a stop and start.
+    private func startChargingActivities() {
+        let vehicles = displayedVehicles
+        Task {
+            await LiveActivityManager.shared.startActivitiesForChargingVehicles(vehicles, modelContext: modelContext)
+        }
     }
 
     /// Leaving the app: save now rather than let autosave fire after the

@@ -500,8 +500,8 @@ class AppSettings {
         #if canImport(ActivityKit)
             Task { @MainActor in
                 for activity in Activity<VehicleActivityAttributes>.activities {
-                    let currentState = activity.content.state
-                    await activity.update(ActivityContent(state: currentState, staleDate: nil))
+                    let content = activity.content
+                    await activity.update(ActivityContent(state: content.state, staleDate: content.staleDate))
                 }
             }
         #endif

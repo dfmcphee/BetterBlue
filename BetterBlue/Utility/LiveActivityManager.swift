@@ -268,6 +268,51 @@ final class LiveActivityManager {
         #endif
     }
 
+    /// How recent a stored status must be to start an activity from it
+    /// without fetching first.
+    private static let storedStatusMaxAge: TimeInterval = 15 * 60
+
+    /// Start a charging Live Activity for each vehicle that's already
+    /// charging but has none — e.g. charging began from the car or a
+    /// charger, or the activity was dismissed. Call when the app comes to
+    /// the foreground: only the foreground app may start an activity, and
+    /// the usual trigger (a status fetch through `updateActivity`) is
+    /// skipped on open while widgets keep the stored status fresh.
+    func startActivitiesForChargingVehicles(_ vehicles: [BBVehicle], modelContext: ModelContext) async {
+        #if canImport(ActivityKit)
+        guard AppSettings.shared.liveActivitiesEnabled else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        for vehicle in vehicles where vehicle.evStatus?.charging == true {
+            guard liveActivity(forVIN: vehicle.vin) == nil else { continue }
+
+            let isRecent = vehicle.lastUpdated.map {
+                Date().timeIntervalSince($0) < Self.storedStatusMaxAge
+            } ?? false
+            if isRecent, let status = createStatusFromVehicle(vehicle) {
+                AppLogger.liveActivity.info(
+                    "Starting Live Activity for already-charging \(vehicle.vin.prefix(8), privacy: .public)"
+                )
+                startOrUpdateActivity(for: vehicle, status: status, type: .charging)
+            } else if let account = vehicle.account {
+                // Too old to trust: fetch, and `fetchVehicleStatus` starts the
+                // activity through `updateActivity` if it's still charging.
+                try? await account.fetchAndUpdateVehicleStatus(for: vehicle, modelContext: modelContext)
+            }
+        }
+        #endif
+    }
+
+    #if canImport(ActivityKit)
+    /// The vehicle's activity, ignoring ones that have already ended but
+    /// are still listed until the system dismisses them.
+    private func liveActivity(forVIN vin: String) -> Activity<VehicleActivityAttributes>? {
+        Activity<VehicleActivityAttributes>.activities.first {
+            $0.attributes.vin == vin && $0.activityState != .ended && $0.activityState != .dismissed
+        }
+    }
+    #endif
+
     nonisolated func refreshActivity(for vin: String, status: VehicleStatus, incrementWakeup: Bool = false) async {
         #if canImport(ActivityKit)
         guard let existingActivity = Activity<VehicleActivityAttributes>.activities.first(where: { $0.attributes.vin == vin }) else {
@@ -286,7 +331,9 @@ final class LiveActivityManager {
             lastWakeupTime: incrementWakeup ? Date() : currentState.lastWakeupTime
         )
 
-        await existingActivity.update(ActivityContent(state: updatedState, staleDate: nil))
+        await existingActivity.update(
+            ActivityContent(state: updatedState, staleDate: currentState.activityType.staleDate)
+        )
 
         // Refresh widgets to stay in sync with live activity
         WidgetCenter.shared.reloadAllTimelines()
@@ -311,7 +358,9 @@ final class LiveActivityManager {
             lastWakeupTime: currentState.lastWakeupTime
         )
 
-        await existingActivity.update(ActivityContent(state: updatedState, staleDate: nil))
+        await existingActivity.update(
+            ActivityContent(state: updatedState, staleDate: existingActivity.content.staleDate)
+        )
         #endif
     }
 
@@ -429,7 +478,8 @@ final class LiveActivityManager {
         climatePresetIcon: String? = nil
     ) {
         #if canImport(ActivityKit)
-        let existingActivity = Activity<VehicleActivityAttributes>.activities.first { $0.attributes.vin == vehicle.vin }
+        // An ended activity can't be updated back to life; request a new one.
+        let existingActivity = liveActivity(forVIN: vehicle.vin)
 
         let contentState: VehicleActivityAttributes.ContentState
         if let activity = existingActivity {
@@ -455,7 +505,7 @@ final class LiveActivityManager {
         if let activity = existingActivity {
             nonisolated(unsafe) let activity = activity
             Task { @MainActor in
-                await activity.update(ActivityContent(state: contentState, staleDate: nil))
+                await activity.update(ActivityContent(state: contentState, staleDate: type.staleDate))
             }
             LiveActivityDiagnostics.record("Updated the \(type.rawValue) Live Activity")
         } else {
@@ -469,7 +519,7 @@ final class LiveActivityManager {
             do {
                 _ = try Activity.request(
                     attributes: attributes,
-                    content: ActivityContent(state: contentState, staleDate: nil),
+                    content: ActivityContent(state: contentState, staleDate: type.staleDate),
                     pushType: nil // We don't use Live Activity push tokens anymore
                 )
                 LiveActivityDiagnostics.record("Started a \(type.rawValue) Live Activity")
@@ -604,6 +654,19 @@ public enum LiveActivityType: String, Codable, Hashable, Sendable {
 
     public var refreshIntervalMinutes: Int {
         return 1
+    }
+
+    /// When an update of this type should be considered out of date: a few
+    /// missed backend wakeups (charging every 5 min, debug every minute).
+    /// iOS doesn't promise to deliver background pushes, so the activity has
+    /// to say when its numbers have stopped moving rather than keep showing
+    /// them as current.
+    public var staleDate: Date? {
+        switch self {
+        case .charging, .climate: Date().addingTimeInterval(15 * 60)
+        case .debug: Date().addingTimeInterval(5 * 60)
+        case .none: nil
+        }
     }
 }
 
