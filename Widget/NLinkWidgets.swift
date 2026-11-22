@@ -11,31 +11,151 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
+/// The app's N Link tokens (`NTheme`, which the widget extension doesn't
+/// compile): Luminous Orange on near-black, condensed numerals.
 private enum NLinkWidgetStyle {
     static let accent = Color(red: 234 / 255, green: 74 / 255, blue: 42 / 255)
     static let onAccent = Color(red: 10 / 255, green: 10 / 255, blue: 10 / 255)
     static let padding: CGFloat = 16
     static let tileHeight: CGFloat = 44
-    /// Widget corner (36) minus the padding, so the curves run parallel.
-    static let tileRadius: CGFloat = 20
+    /// The app's button corner, rather than following the widget's curve.
+    static let tileRadius: CGFloat = 14
+
+    static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        .system(size: size, weight: weight).width(.condensed)
+    }
 }
 
-/// The default widget background, dark in both system appearances.
-/// Widgets can't show the wallpaper through their background, so this
-/// is an opaque dark sheen with a light rim.
+/// The default widget background: black with a hairline edge, dark in
+/// both system appearances.
 struct NLinkDarkBackground: View {
+    static let color = Color.black
+
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 34 / 255, green: 34 / 255, blue: 40 / 255),
-                    Color(red: 13 / 255, green: 13 / 255, blue: 17 / 255)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            ContainerRelativeShape().strokeBorder(.white.opacity(0.16), lineWidth: 1)
+            Self.color
+            ContainerRelativeShape().strokeBorder(.white.opacity(0.1), lineWidth: 1)
         }
+    }
+}
+
+/// Small tracked caps line, e.g. "CHARGING · 7.2 KW" (`NCapsLabel`).
+private struct NLinkCapsLabel: View {
+    let text: String
+    let color: Color
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .tracking(0.8)
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
+}
+
+/// The app's segmented charge bar (`NBlockBar`) with a limit tick.
+private struct NLinkBlockBar: View {
+    let value: Double
+    let limit: Double?
+    let textColor: Color
+    var blocks = 16
+    var height: CGFloat = 6
+
+    var body: some View {
+        GeometryReader { geo in
+            let spacing: CGFloat = 2.5
+            let width = (geo.size.width - spacing * CGFloat(blocks - 1)) / CGFloat(blocks)
+            let filled = Int((min(max(value, 0), 1) * Double(blocks)).rounded())
+            ZStack(alignment: .leading) {
+                HStack(spacing: spacing) {
+                    ForEach(0..<blocks, id: \.self) { index in
+                        Rectangle()
+                            .fill(index < filled ? NLinkWidgetStyle.accent : textColor.opacity(0.16))
+                            .widgetAccentable(index < filled)
+                            .frame(width: width)
+                    }
+                }
+                .frame(height: height)
+                if let limit {
+                    Rectangle()
+                        .fill(textColor)
+                        .frame(width: 2, height: height + 5)
+                        .offset(x: geo.size.width * min(max(limit, 0), 1) - 1)
+                }
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(height: height + 5)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The app's 270° segmented gauge (`NArcGauge`): the orange fill over a
+/// track, split by gaps, with a white tick at the charge limit. The gaps
+/// are cut in the background's own colour (`gapColor`) so they read as
+/// space between segments, not as outlines; with no solid background to
+/// match (a custom gradient), the arc is drawn unsegmented.
+private struct NLinkArcGauge: View {
+    let value: Double
+    let marker: Double?
+    let size: CGFloat
+    let lineWidth: CGFloat
+    let textColor: Color
+    let gapColor: Color?
+    var sweep: Double = 270
+    var segments = 36
+
+    var body: some View {
+        let fraction = sweep / 360
+        let circumference = .pi * (size - lineWidth)
+        let segmentLength = circumference * fraction / Double(segments)
+        ZStack {
+            Circle()
+                .trim(from: 0, to: fraction)
+                .stroke(textColor.opacity(0.16), style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+            Circle()
+                .trim(from: 0, to: fraction * min(max(value, 0), 1))
+                .stroke(NLinkWidgetStyle.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                .widgetAccentable()
+            if let gapColor {
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(gapColor, style: StrokeStyle(
+                        lineWidth: lineWidth + 2,
+                        dash: [2, max(segmentLength - 2, 1)]
+                    ))
+            }
+            if let marker {
+                Capsule()
+                    .fill(textColor)
+                    .frame(width: 2.5, height: lineWidth + 6)
+                    .offset(y: -(size - lineWidth) / 2)
+                    .rotationEffect(.degrees(90) + .degrees(sweep * min(max(marker, 0), 1)))
+            }
+        }
+        .rotationEffect(.degrees(90 + (360 - sweep) / 2))
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+extension VehicleEntity {
+    /// The caps line under the vehicle name, as the Live Activity and the
+    /// app's charging screen phrase it: "CHARGING · 7.2 KW" while
+    /// charging, otherwise lock and climate state.
+    fileprivate var nStatusLine: (text: String, isLive: Bool) {
+        if isCharging == true {
+            if let kw = chargeSpeedKilowatts, kw > 0 {
+                return (String(format: "Charging · %.1f kW", kw), true)
+            }
+            return ("Charging", true)
+        }
+        var parts: [String] = []
+        if let locked = isLocked { parts.append(locked ? "Locked" : "Unlocked") }
+        if isClimateOn == true { parts.append("Climate on") }
+        if parts.isEmpty, isPluggedIn == true { parts.append("Plugged in") }
+        return (parts.joined(separator: " · "), isClimateOn == true)
     }
 }
 
@@ -71,9 +191,9 @@ struct NLinkSmallWidget: View {
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(vehicle.displayName.uppercased())
-                .font(.system(size: 20, weight: .bold).width(.condensed))
+                .font(NLinkWidgetStyle.display(20, weight: .bold))
                 .foregroundStyle(textColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -86,7 +206,7 @@ struct NLinkSmallWidget: View {
                     .accessibilityLabel("Charging")
             }
             Text(statusText)
-                .font(.system(size: 12))
+                .font(NLinkWidgetStyle.display(15))
                 .foregroundStyle(textColor.opacity(0.78))
                 .lineLimit(1)
                 .fixedSize()
@@ -95,23 +215,11 @@ struct NLinkSmallWidget: View {
     }
 
     private var chargeBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(textColor.opacity(0.16))
-                Capsule()
-                    .fill(NLinkWidgetStyle.accent)
-                    .widgetAccentable()
-                    .frame(width: geo.size.width * min(max(percentage / 100, 0), 1))
-                if let target = vehicle.targetStateOfCharge {
-                    Rectangle()
-                        .fill(textColor)
-                        .frame(width: 2, height: 7)
-                        .offset(x: geo.size.width * CGFloat(target) / 100 - 1)
-                }
-            }
-        }
-        .frame(height: 5)
-        .accessibilityHidden(true)
+        NLinkBlockBar(
+            value: percentage / 100,
+            limit: vehicle.targetStateOfCharge.map { Double($0) / 100 },
+            textColor: textColor
+        )
     }
 
     @ViewBuilder
@@ -161,9 +269,9 @@ struct NLinkTileStyle: ButtonStyle {
 
     private var fill: Color {
         switch emphasis {
-        case .normal: textColor.opacity(0.13)
+        case .normal: textColor.opacity(0.09)
         case .active: NLinkWidgetStyle.accent
-        case .idle: textColor.opacity(0.05)
+        case .idle: textColor.opacity(0.03)
         case let .custom(color): color.opacity(0.6)
         }
     }
@@ -177,10 +285,11 @@ struct NLinkTileStyle: ButtonStyle {
         }
     }
 
+    /// A solid hairline, as the app's buttons and cards have.
     private var rim: Color {
         switch emphasis {
-        case .normal: textColor.opacity(0.12)
-        case .idle: textColor.opacity(0.07)
+        case .normal: textColor.opacity(0.18)
+        case .idle: textColor.opacity(0.1)
         case .active, .custom: .clear
         }
     }
@@ -204,6 +313,9 @@ struct NLinkMediumWidget: View {
     let buttons: [ConfiguredWidgetButton]
     let textColor: Color
     let showPercent: Bool
+
+    /// The default black background, whose colour the gauge's gaps match.
+    var isDefaultBackground = true
 
     private static let ringSize: CGFloat = 112
 
@@ -232,45 +344,41 @@ struct NLinkMediumWidget: View {
     // MARK: - Ring
 
     private var ring: some View {
-        let lineWidth = Self.ringSize * 0.09
-        let fraction = min(max(percentage / 100, 0), 1)
+        let lineWidth = Self.ringSize * 0.1
         return ZStack {
-            Circle()
-                .stroke(textColor.opacity(0.16), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: fraction)
-                .stroke(NLinkWidgetStyle.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .widgetAccentable()
-            if let target = vehicle.targetStateOfCharge {
-                Capsule()
-                    .fill(textColor)
-                    .frame(width: 2.5, height: lineWidth + 2)
-                    .offset(y: -(Self.ringSize - lineWidth) / 2)
-                    .rotationEffect(.degrees(Double(target) / 100 * 360))
-            }
+            NLinkArcGauge(
+                value: percentage / 100,
+                marker: vehicle.targetStateOfCharge.map { Double($0) / 100 },
+                size: Self.ringSize,
+                lineWidth: lineWidth,
+                textColor: textColor,
+                gapColor: isDefaultBackground ? NLinkDarkBackground.color : nil
+            )
             VStack(spacing: 0) {
                 if showPercent, vehicle.batteryPercentage != nil {
-                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 1) {
                         Text("\(Int(percentage.rounded()))")
-                            .font(.system(size: 38, weight: .bold).width(.condensed))
+                            .font(NLinkWidgetStyle.display(40, weight: .bold))
+                            .monospacedDigit()
                         Text("%")
-                            .font(.system(size: 18, weight: .semibold).width(.condensed))
-                            .foregroundStyle(textColor.opacity(0.78))
+                            .font(NLinkWidgetStyle.display(17))
+                            .foregroundStyle(textColor.opacity(0.6))
                     }
                     .foregroundStyle(textColor)
                     Text(vehicle.rangeText)
-                        .font(.system(size: 12))
+                        .font(NLinkWidgetStyle.display(15))
                         .foregroundStyle(textColor.opacity(0.78))
                 } else {
                     Text(vehicle.rangeText)
-                        .font(.system(size: 22, weight: .bold).width(.condensed))
+                        .font(NLinkWidgetStyle.display(22, weight: .bold))
                         .foregroundStyle(textColor)
                 }
             }
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .padding(.horizontal, lineWidth + 4)
+            // The arc is open at the bottom; sit the number a touch higher.
+            .offset(y: -2)
         }
         .frame(width: Self.ringSize, height: Self.ringSize)
         .accessibilityElement(children: .ignore)
@@ -290,33 +398,28 @@ struct NLinkMediumWidget: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(vehicle.displayName.uppercased())
-                .font(.system(size: 20, weight: .bold).width(.condensed))
+                .font(NLinkWidgetStyle.display(22, weight: .bold))
                 .foregroundStyle(textColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(statusLine)
-                .font(.system(size: 12))
-                .foregroundStyle(textColor.opacity(0.78))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            NLinkCapsLabel(text: statusLine, color: statusIsLive ? NLinkWidgetStyle.accent : textColor.opacity(0.6))
         }
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
     }
 
-    /// "Locked · Climate off · 6:48 AM". While a command sent from a
-    /// widget is waiting on the next status refresh, that shows instead.
-    /// Times are absolute because widget text is frozen between reloads.
+    /// "CHARGING · 7.2 KW · 6:48 AM", or lock/climate state when not
+    /// charging. While a command sent from a widget is waiting on the next
+    /// status refresh, that shows instead. Times are absolute because
+    /// widget text is frozen between reloads.
     private var statusLine: String {
         if let pending = pendingCommand {
             return "\(pending.command) sent \(pending.date.formatted(date: .omitted, time: .shortened))"
         }
-        var parts: [String] = []
-        if vehicle.isCharging == true { parts.append("Charging") }
-        if let locked = vehicle.isLocked { parts.append(locked ? "Locked" : "Unlocked") }
-        if let climate = vehicle.isClimateOn { parts.append(climate ? "Climate on" : "Climate off") }
-        parts.append(updatedTime)
-        return parts.joined(separator: " · ")
+        let status = vehicle.nStatusLine.text
+        return status.isEmpty ? updatedTime : "\(status) · \(updatedTime)"
     }
+
+    private var statusIsLive: Bool { pendingCommand == nil && vehicle.nStatusLine.isLive }
 
     private var pendingCommand: (command: String, date: Date)? {
         guard let latest = WidgetCommandStatus.latest(vin: vehicle.vin) else { return nil }

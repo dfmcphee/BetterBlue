@@ -16,15 +16,18 @@ struct VehicleWidgetEntryView: View {
     var body: some View {
         if let vehicle = entry.vehicle {
             // The background (and its matching text color) are resolved
-            // here. "Default" is the N Link dark surface in both system
-            // appearances; other backgrounds are the user's own choice.
+            // here. "Default" and "Black" are the N Link black surface in
+            // both system appearances — "Black" used to be a grey gradient,
+            // which hid the gauge's segments and read as grey, not black.
+            // Other backgrounds are the user's own choice.
             let backgroundName = entry.configuration.effectiveBackgroundName(for: vehicle)
             let style = WidgetBackground.style(forName: backgroundName)
-            let isDefault = backgroundName == "default"
+            let isDefault = backgroundName == "default" || backgroundName == "black"
             VehicleControlsWidget(
                 vehicle: vehicle,
                 buttons: entry.configuration.slotButtons,
                 textColor: isDefault ? .white : style.textColor,
+                isDefaultBackground: isDefault,
                 showEVPercent: entry.configuration.showEVPercentage,
                 showGasPercent: entry.configuration.showGasPercentage
             )
@@ -61,6 +64,7 @@ struct VehicleControlsWidget: View {
     let vehicle: VehicleEntity
     let buttons: [ConfiguredWidgetButton]
     let textColor: Color
+    var isDefaultBackground = true
     let showEVPercent: Bool
     let showGasPercent: Bool
     @Environment(\.widgetFamily) private var family
@@ -79,7 +83,8 @@ struct VehicleControlsWidget: View {
                     vehicle: vehicle,
                     buttons: buttons,
                     textColor: textColor,
-                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent
+                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent,
+                    isDefaultBackground: isDefaultBackground
                 )
             }
         }
