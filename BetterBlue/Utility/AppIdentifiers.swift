@@ -14,13 +14,20 @@ import Foundation
 enum AppIdentifiers {
     nonisolated static let appGroup = infoPlistValue(
         for: "BBAppGroupIdentifier",
-        fallback: "group.com.betterblue.shared"
+        fallback: "group.com.dfmcphee.ncontrol"
     )
 
     nonisolated static let iCloudContainer = infoPlistValue(
         for: "BBICloudContainerIdentifier",
-        fallback: "iCloud.com.markschmidt.BetterBlue"
+        fallback: "iCloud.com.dfmcphee.NControl"
     )
+
+    /// Host of the Live Activity wake-up Worker, or nil when none is
+    /// configured (background refresh of Live Activities is then off).
+    nonisolated static let liveActivityHost: String? = {
+        let value = infoPlistValue(for: "BBLiveActivityHost", fallback: "")
+        return value.isEmpty ? nil : value
+    }()
 
     private nonisolated static func infoPlistValue(for key: String, fallback: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,

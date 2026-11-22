@@ -6,6 +6,8 @@
 	<string>$(BB_APP_GROUP)</string>
 	<key>BBICloudContainerIdentifier</key>
 	<string>$(BB_ICLOUD_CONTAINER)</string>
+	<key>BBLiveActivityHost</key>
+	<string>$(BB_LIVE_ACTIVITY_HOST)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>maps</string>

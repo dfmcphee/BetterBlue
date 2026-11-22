@@ -9,10 +9,14 @@
 DEVELOPMENT_TEAM = YOUR_TEAM_ID
 
 // A bundle identifier prefix unique to your team. App IDs are globally
-// unique across teams, so you can't reuse com.markschmidt.
+// unique across teams, so you can't reuse com.dfmcphee.
 BB_BUNDLE_ID_PREFIX = com.yourname
 
 // App Group and iCloud container identifiers registered to your team.
 // With automatic signing, Xcode registers these for you on first build.
-BB_APP_GROUP = group.com.yourname.betterblue
-BB_ICLOUD_CONTAINER = iCloud.com.yourname.BetterBlue
+BB_APP_GROUP = group.com.yourname.ncontrol
+BB_ICLOUD_CONTAINER = iCloud.com.yourname.NControl
+
+// Host of your deployed LiveActivityWorker, e.g.
+// nlink-live-activity.yourname.workers.dev (no "https://").
+BB_LIVE_ACTIVITY_HOST =

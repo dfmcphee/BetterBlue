@@ -126,6 +126,8 @@ struct MainView: View {
                 BBLogger.info(.app, "[SVI-\(instanceTag)] scenePhase \(old) → \(new) (idx=\(selectedVehicleIndex), count=\(displayedVehicles.count))")
                 if new == .background {
                     finishStoreWorkBeforeSuspension()
+                } else if new == .active {
+                    startChargingActivities()
                 }
             }
             .onAppear {
@@ -149,6 +151,9 @@ struct MainView: View {
                 Task {
                     await loadVehiclesForAllAccounts()
                 }
+                // Cold launch: `scenePhase` starts out active, so the
+                // onChange above doesn't fire for it.
+                startChargingActivities()
             }
             .onChange(of: currentVehicle?.location, initial: true) { _, _ in
                 // `initial: true` catches the cold-launch case
@@ -216,6 +221,16 @@ struct MainView: View {
                     await refreshCurrentVehicleIfNeeded(modelContext: modelContext)
                 }
             }
+    }
+
+    /// Opening the app while a car is already charging (started from the
+    /// car or a charger, or after the activity was dismissed): start its
+    /// Live Activity now, without waiting for a stop and start.
+    private func startChargingActivities() {
+        let vehicles = displayedVehicles
+        Task {
+            await LiveActivityManager.shared.startActivitiesForChargingVehicles(vehicles, modelContext: modelContext)
+        }
     }
 
     /// Leaving the app: save now rather than let autosave fire after the
@@ -330,6 +345,27 @@ struct MainView: View {
 
     @ViewBuilder
     private var mainContent: some View {
+        if showsVehicles {
+            // N Link layout: Car / Map / Trips / Settings tabs.
+            NRootView(
+                vehicles: displayedVehicles,
+                selectedIndex: $selectedVehicleIndex,
+                mfaState: mfaState,
+                sheetPresentation: sheetPresentation
+            )
+            .mfaFlow(state: mfaState)
+            .sheet(item: Bindable(sheetPresentation).active) { sheet in
+                vehicleSheetContent(for: sheet)
+            }
+        } else {
+            classicContent
+        }
+    }
+
+    /// Empty / loading / error states (and the previous map + sheet
+    /// layout, which `showsVehicles` now routes to `NRootView` instead).
+    @ViewBuilder
+    private var classicContent: some View {
         ZStack {
             navigationContent
             // Where the navigation bar would put its trailing item — see
@@ -518,6 +554,8 @@ struct MainView: View {
             ClimateSettingsSheet(vehicle: vehicle)
         case .chargeLimitSettings(let vehicle):
             ChargeLimitSettingsSheet(vehicle: vehicle)
+        case .vehicleMap(let vehicle):
+            VehicleMapSheet(vehicle: vehicle, onDone: { sheetPresentation.dismiss() })
         }
     }
 
@@ -549,8 +587,14 @@ struct MainView: View {
                     )
                 } else {
                     // Same condition as `showsVehicles`, which layers
-                    // the vehicle sheet over this map.
-                    vehicleMap
+                    // the vehicle sheet over this hero stage.
+                    if let vehicle = currentVehicle {
+                        VehicleHeroView(
+                            vehicle: vehicle,
+                            bottomInset: mapBottomInset,
+                            sheetPresentation: sheetPresentation
+                        )
+                    }
                 }
         }
     }

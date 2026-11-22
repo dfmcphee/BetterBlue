@@ -48,9 +48,7 @@ struct VehicleInfoView: View {
                         }
                     }
             }
-            
-            VehicleCustomizationSection(bbVehicle: bbVehicle)
-            
+
             
             if let account = bbVehicle.account {
                 Section("Account Info") {

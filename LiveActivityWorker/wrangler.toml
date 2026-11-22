@@ -1,0 +1,26 @@
+name = "nlink-live-activity"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Send due wake-up pushes every minute.
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+APNS_KEY_ID = "3825M98A2M"
+APNS_TEAM_ID = "U7937AY495"
+APNS_TOPIC = "com.dfmcphee.NControl"
+# Sandbox matches builds installed from Xcode. TestFlight and App Store
+# builds need api.push.apple.com (and a key that allows production).
+APNS_HOST = "api.sandbox.push.apple.com"
+# The APNs .p8 key is a secret, set with:
+#   npx wrangler secret put APNS_KEY < AuthKey_3825M98A2M.p8
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nlink-live-activity"
+# Created with `npx wrangler d1 create nlink-live-activity`.
+database_id = "f9af5d64-a8f6-4f56-a998-f3e854263767"
+
+[observability]
+enabled = true

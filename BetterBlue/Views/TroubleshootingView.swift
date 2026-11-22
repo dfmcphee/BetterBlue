@@ -49,7 +49,7 @@ struct TroubleshootingView: View {
             }
 
             Section {
-                Link(destination: URL(string: "https://github.com/schmidtwmark/BetterBlue/issues")!) {
+                Link(destination: URL(string: "https://github.com/dfmcphee/BetterBlue/issues")!) {
                     Label("Report an Issue on GitHub", systemImage: "exclamationmark.bubble")
                 }
             }

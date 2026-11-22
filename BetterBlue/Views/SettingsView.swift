@@ -30,15 +30,19 @@ struct SettingsView: View {
     ) private var displayedVehicles: [BBVehicle]
     @Environment(\.dismiss) private var dismiss
     @State private var appSettings = AppSettings.shared
+    /// True when shown as the N Link Settings tab rather than a sheet:
+    /// hides the Done button, which would have nothing to dismiss.
+    var isTab = false
 
     // Debug functionality - only in debug builds
     @State private var showingClearDataAlert = false
     @State private var clearDataResult: String?
     @State private var showingLiveActivitiesInfo = false
+    @AppStorage(LiveActivityDiagnostics.key) private var liveActivityLastEvent = ""
     @State private var showingExportSheet = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 // Vehicles section for display management
                 let allVehicles = displayedVehicles
@@ -123,6 +127,14 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                    }
+                    if appSettings.liveActivitiesEnabled, !liveActivityLastEvent.isEmpty {
+                        LabeledContent("Last Live Activity event") {
+                            Text(liveActivityLastEvent)
+                                .multilineTextAlignment(.trailing)
+                                .textSelection(.enabled)
+                        }
+                        .font(.footnote)
                     }
                 } header: {
                     Text("Widget Settings")
@@ -233,7 +245,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    Link(destination: URL(string: "https://github.com/schmidtwmark/BetterBlue")!) {
+                    Link(destination: URL(string: "https://github.com/dfmcphee/BetterBlue")!) {
                         Label("App Source Code", systemImage: "location.app")
                     }
 
@@ -245,14 +257,14 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Link(destination: URL(string: "https://apps.apple.com/qa/developer/mark-schmidt/id1502505700")!) {
-                        Label("My Other Apps", systemImage: "storefront")
+                    Link(destination: URL(string: "https://github.com/schmidtwmark/BetterBlue")!) {
+                        Label("Original BetterBlue Project", systemImage: "heart")
                     }
                 } header: {
-                    Text("Shameless Self Promotion")
+                    Text("Credits")
                 } footer: {
-                    let link = "[Mark Schmidt](https://markschmidt.io)"
-                    if let mailLink = try? AttributedString(markdown: "Created by \(link)") {
+                    let link = "[BetterBlue](https://github.com/schmidtwmark/BetterBlue) by [Mark Schmidt](https://markschmidt.io)"
+                    if let mailLink = try? AttributedString(markdown: "Based on \(link)") {
                         Text(mailLink)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -261,9 +273,11 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
+                if !isTab {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -474,7 +488,7 @@ private struct LiveActivitiesInfoSheet: View {
                         Text("What it does")
                             .font(.headline)
                         Text(
-                            "When enabled, BetterBlue will display a Live Activity on your " +
+                            "When enabled, N Link will display a Live Activity on your " +
                             "Lock Screen and Dynamic Island while your vehicle is charging. " +
                             "The Live Activity shows real-time charging progress without " +
                             "needing to open the app."
@@ -487,7 +501,7 @@ private struct LiveActivitiesInfoSheet: View {
                         Text("How it works")
                             .font(.headline)
                         Text(
-                            "To keep the Live Activity updated, BetterBlue registers your " +
+                            "To keep the Live Activity updated, N Link registers your " +
                             "device with a lightweight backend service that periodically " +
                             "sends silent push notifications to wake the app and refresh " +
                             "the charging status."
@@ -546,7 +560,7 @@ private struct LiveActivitiesInfoSheet: View {
                         .foregroundColor(.secondary)
 
                         Button {
-                            if let url = URL(string: "https://github.com/schmidtwmark/BetterBlue/tree/main/LiveActivityBackend") {
+                            if let url = URL(string: "https://github.com/dfmcphee/BetterBlue/tree/main/LiveActivityWorker") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {

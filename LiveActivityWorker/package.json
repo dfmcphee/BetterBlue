@@ -1,0 +1,16 @@
+{
+  "name": "nlink-live-activity",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Live Activity wake-up pushes for N Link, as a Cloudflare Worker",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:init": "wrangler d1 execute nlink-live-activity --remote --file=schema.sql",
+    "db:init:local": "wrangler d1 execute nlink-live-activity --local --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,20 +1,25 @@
-// Shared build configuration for all BetterBlue targets.
+// Shared build configuration for all N Link targets.
 //
 // To build with your own signing identity, don't edit this file — copy
 // Config/Local.xcconfig.template to Config/Local.xcconfig (gitignored) and
 // override these values there.
 
 // Apple Developer team used for code signing.
-DEVELOPMENT_TEAM = C2UW47HS8X
+DEVELOPMENT_TEAM = U7937AY495
 
 // Reverse-DNS prefix for every target's bundle identifier
-// (com.example -> com.example.BetterBlue, com.example.BetterBlue.Widget, ...).
-BB_BUNDLE_ID_PREFIX = com.markschmidt
+// (com.example -> com.example.NControl, com.example.NControl.Widget, ...).
+BB_BUNDLE_ID_PREFIX = com.dfmcphee
 
 // App Group shared by the app, widgets, and watch app.
-BB_APP_GROUP = group.com.betterblue.shared
+BB_APP_GROUP = group.com.dfmcphee.ncontrol
 
 // CloudKit container used for iCloud sync.
-BB_ICLOUD_CONTAINER = iCloud.com.markschmidt.BetterBlue
+BB_ICLOUD_CONTAINER = iCloud.com.dfmcphee.NControl
+
+// Host of the Live Activity wake-up Worker (LiveActivityWorker/), without
+// "https://" (xcconfig treats "//" as a comment). Empty disables
+// background Live Activity refresh.
+BB_LIVE_ACTIVITY_HOST = nlink-live-activity.dominic-mcphee.workers.dev
 
 #include? "Local.xcconfig"

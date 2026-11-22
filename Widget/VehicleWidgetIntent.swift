@@ -608,13 +608,8 @@ struct VehicleEntity: AppEntity {
         vin = bbVehicle.vin
         fuelType = bbVehicle.fuelType
         backgroundColorName = bbVehicle.backgroundColorName
-        primaryColorName = bbVehicle.primaryColorName
-        chargingColorName = bbVehicle.chargingColorName
-        gasColorName = bbVehicle.gasColorName
-        lockColorName = bbVehicle.lockColorName
-        unlockColorName = bbVehicle.unlockColorName
-        startClimateColorName = bbVehicle.startClimateColorName
-        stopColorName = bbVehicle.stopColorName
+        // Per-vehicle accent colors are no longer a setting; leave the
+        // names nil so every color resolves to its default.
         timestamp = bbVehicle.lastUpdated ?? Date()
 
         // Compute per-fuel-type range/percentage separately so PHEVs

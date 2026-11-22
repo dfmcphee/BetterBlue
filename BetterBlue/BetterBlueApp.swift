@@ -222,6 +222,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         AppLogger.push.error("Failed to register for remote notifications: \(error)")
+        LiveActivityDiagnostics.record("Couldn't get a push token: \(error.localizedDescription)")
     }
 
     // Handle background push notifications for Live Activity wakeup
@@ -329,7 +330,7 @@ struct ContainerFailureView: View {
             Text("Couldn't Load Your Data")
                 .font(.title2)
                 .fontWeight(.semibold)
-            Text("BetterBlue couldn't open its local data store. This usually clears up after signing back into iCloud or restarting the device.")
+            Text("N Link couldn't open its local data store. This usually clears up after signing back into iCloud or restarting the device.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

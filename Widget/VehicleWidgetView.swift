@@ -16,24 +16,31 @@ struct VehicleWidgetEntryView: View {
     var body: some View {
         if let vehicle = entry.vehicle {
             // The background (and its matching text color) are resolved
-            // here. "Default" uses dynamic colors so it swaps with the
-            // system appearance at the render layer — no colorScheme env.
-            let style = WidgetBackground.style(
-                forName: entry.configuration.effectiveBackgroundName(for: vehicle)
-            )
+            // here. "Default" and "Black" are the N Link black surface in
+            // both system appearances — "Black" used to be a grey gradient,
+            // which hid the gauge's segments and read as grey, not black.
+            // Other backgrounds are the user's own choice.
+            let backgroundName = entry.configuration.effectiveBackgroundName(for: vehicle)
+            let style = WidgetBackground.style(forName: backgroundName)
+            let isDefault = backgroundName == "default" || backgroundName == "black"
             VehicleControlsWidget(
                 vehicle: vehicle,
                 buttons: entry.configuration.slotButtons,
-                textColor: style.textColor,
+                textColor: isDefault ? .white : style.textColor,
+                isDefaultBackground: isDefault,
                 showEVPercent: entry.configuration.showEVPercentage,
                 showGasPercent: entry.configuration.showGasPercentage
             )
             .containerBackground(for: .widget) {
-                LinearGradient(
-                    gradient: Gradient(colors: style.gradient),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                if isDefault {
+                    NLinkDarkBackground()
+                } else {
+                    LinearGradient(
+                        gradient: Gradient(colors: style.gradient),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
             }
         } else {
             VStack {
@@ -57,20 +64,29 @@ struct VehicleControlsWidget: View {
     let vehicle: VehicleEntity
     let buttons: [ConfiguredWidgetButton]
     let textColor: Color
+    var isDefaultBackground = true
     let showEVPercent: Bool
     let showGasPercent: Bool
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
         Link(destination: URL(string: "betterblue://vehicle/\(vehicle.vin)")!) {
-            UnifiedVehicleWidget(
-                vehicle: vehicle,
-                buttons: buttons,
-                textColor: textColor,
-                showEVPercent: showEVPercent,
-                showGasPercent: showGasPercent,
-                isSmall: family == .systemSmall
-            )
+            if family == .systemSmall {
+                NLinkSmallWidget(
+                    vehicle: vehicle,
+                    buttons: buttons,
+                    textColor: textColor,
+                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent
+                )
+            } else {
+                NLinkMediumWidget(
+                    vehicle: vehicle,
+                    buttons: buttons,
+                    textColor: textColor,
+                    showPercent: vehicle.fuelType.hasElectricCapability ? showEVPercent : showGasPercent,
+                    isDefaultBackground: isDefaultBackground
+                )
+            }
         }
     }
 }

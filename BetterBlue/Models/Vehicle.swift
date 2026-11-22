@@ -573,44 +573,34 @@ extension BBVehicle {
             customName! : model
     }
 
-    // MARK: - Per-vehicle accent colors (resolved)
+    // MARK: - Accent colors
+
+    // These used to be per-vehicle choices (`primaryColorName` and
+    // friends). N Link has one look, so the settings are gone and these are
+    // fixed; the stored names stay in the model only because removing
+    // SwiftData/CloudKit fields is a schema migration. Still read by the
+    // Apple Watch app and the pre-N Link views.
 
     /// Refresh button + map pin tint.
-    var primaryColor: Color {
-        CustomColor.color(forName: primaryColorName, default: "blue")
-    }
+    var primaryColor: Color { CustomColor.color(forName: nil, default: "blue") }
 
-    /// Bolt icon when initiating charge / "Stop Charge" button.
-    /// Also used as the general EV indicator color on the sheet.
-    var chargingColor: Color {
-        CustomColor.color(forName: chargingColorName, default: "green")
-    }
+    /// Bolt icon when initiating charge, and the general EV indicator.
+    var chargingColor: Color { CustomColor.color(forName: nil, default: "green") }
 
-    /// Fuelpump icon + bar tint on the sheet's gas range row.
-    var gasColor: Color {
-        CustomColor.color(forName: gasColorName, default: "orange")
-    }
+    /// Fuelpump icon + bar tint on the gas range row.
+    var gasColor: Color { CustomColor.color(forName: nil, default: "orange") }
 
     /// Color shown when the vehicle is locked.
-    var lockColor: Color {
-        CustomColor.color(forName: lockColorName, default: "red")
-    }
+    var lockColor: Color { CustomColor.color(forName: nil, default: "red") }
 
     /// Color shown when the vehicle is unlocked.
-    var unlockColor: Color {
-        CustomColor.color(forName: unlockColorName, default: "green")
-    }
+    var unlockColor: Color { CustomColor.color(forName: nil, default: "green") }
 
     /// Climate start action color.
-    var startClimateColor: Color {
-        CustomColor.color(forName: startClimateColorName, default: "blue")
-    }
+    var startClimateColor: Color { CustomColor.color(forName: nil, default: "blue") }
 
-    /// Color for "Stop" buttons in active states (stop charging,
-    /// stop climate). Default: red.
-    var stopColor: Color {
-        CustomColor.color(forName: stopColorName, default: "red")
-    }
+    /// "Stop" buttons in active states (stop charging, stop climate).
+    var stopColor: Color { CustomColor.color(forName: nil, default: "red") }
 
     /// Returns the appropriate plug icon based on current charging state and user's port type preference
     func plugIcon(for plugType: VehicleStatus.PlugType?) -> Image {

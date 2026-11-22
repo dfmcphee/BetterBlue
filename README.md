@@ -1,22 +1,12 @@
-# BetterBlue
+# N Link
 
 <p align="center">
-  <img src="betterblue-app.png" alt="BetterBlue vehicle view with map, charging status, and controls" width="260"/>
-  <img src="betterblue-widget.png" alt="BetterBlue home screen widget with lock, unlock, and climate buttons" width="260"/>
-  <img src="betterblue-watch.png" alt="BetterBlue on Apple Watch" width="200"/>
+  <img src="betterblue-app.png" alt="Vehicle view with map, charging status, and controls" width="260"/>
+  <img src="betterblue-widget.png" alt="Home screen widget with lock, unlock, and climate buttons" width="260"/>
+  <img src="betterblue-watch.png" alt="N Link on Apple Watch" width="200"/>
 </p>
 
-<p align="left">
-<a href="https://testflight.apple.com/join/n7NRXTWb">
-<img src="https://img.shields.io/badge/Install-Testflight-blue?style=for-the-badge" alt="Download on TestFlight" width="200"/>
-</a>
-</p>
-
-<p align="left">
-<a href="https://markschmidt.io/betterblue">
-<img src="https://img.shields.io/badge/Learn%20More-Visit%20Website-blue?style=for-the-badge" alt="Visit Website" width="200"/>
-</a>
-</p>
+N Link is a fork of [BetterBlue](https://github.com/schmidtwmark/BetterBlue) by Mark Schmidt, focused on Hyundai vehicles.
 
 A modern iOS app for controlling your Hyundai, Kia, or Genesis vehicle using BlueLink, Kia Connect, and Genesis Connect (Canada) services. Built with SwiftUI and powered by [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit/tree/main).
 
@@ -64,7 +54,7 @@ BetterBlue/
 ├── BetterBlueWatch Watch App/  # Apple Watch app
 ├── Widget/                     # iOS widgets, Control Center, Live Activities
 ├── WatchWidget/                # Watch complications
-├── LiveActivityBackend/        # Backend for Live Activity push notifications
+├── LiveActivityWorker/         # Cloudflare Worker for Live Activity wake-up pushes
 ├── BetterBlueKit/              # Swift package for API communication
 └── README.md                   # This file
 ```
@@ -120,7 +110,7 @@ swiftlint lint
 Live Activities display real-time charging progress on your Lock Screen and Dynamic Island. This feature is **off by default** and can be enabled in Settings > Widget Settings.
 
 ### How it works
-To keep the Live Activity updated, BetterBlue uses a lightweight [backend service](LiveActivityBackend/) that sends silent push notifications to refresh the charging status periodically.
+To keep the Live Activity updated, N Link uses a lightweight [Cloudflare Worker](LiveActivityWorker/) that sends silent push notifications to refresh the charging status periodically.
 
 ### Privacy
 - No vehicle information is sent to the backend
@@ -128,7 +118,7 @@ To keep the Live Activity updated, BetterBlue uses a lightweight [backend servic
 - Only your device's push token is stored temporarily
 - Tokens are automatically deleted after 8 hours
 
-The backend is fully open source - see [LiveActivityBackend/](LiveActivityBackend/) for the source code.
+The backend is fully open source - see [LiveActivityWorker/](LiveActivityWorker/) for the source code and setup.
 
 ## Privacy & Security
 
@@ -146,4 +136,5 @@ The backend is fully open source - see [LiveActivityBackend/](LiveActivityBacken
 
 ## License
 
+N Link is based on [BetterBlue](https://github.com/schmidtwmark/BetterBlue), © 2025 Mark Schmidt.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
